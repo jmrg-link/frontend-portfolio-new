@@ -1,0 +1,458 @@
+@import 'tailwindcss';
+
+/*
+ * Estructura «Panel de máquina» (bandejas, códigos de selección, display,
+ * tickets) con el acabado de ingeniería del sketch aprobado: fondo casi negro
+ * con temple azul, superficies elevadas por tono y borde —no por relieve—,
+ * radios suaves y un solo acento, esmeralda. Tema dual noche (default) y día.
+ * El ticket térmico es un objeto físico y no cambia con el tema.
+ *
+ * `--color-led-ink` es la voz del LED cuando actúa como texto sobre panel: de
+ * noche es el mismo verde del LED, de día pasa a tinta esmeralda oscura porque
+ * la luz emitida (#10b981) no alcanza el 4,5:1 de WCAG 1.4.3 sobre superficies
+ * claras (Lighthouse lo midió en 2,53:1 sobre blanco). `text-led` queda para
+ * luz de verdad: bordes, halos y fondos.
+ */
+@theme {
+  --color-panel: #0c1017;
+  --color-panel-deep: #05070b;
+  --color-panel-raised: #11161d;
+  --color-groove: #243044;
+  --color-silk: #e6edf3;
+  --color-silk-dim: #8b98ab;
+  --color-led: #34d399;
+  --color-led-dim: #1d5c3c;
+  --color-led-ink: #34d399;
+  --color-vfd: #34d399;
+  --color-vfd-dim: #2dd4bf;
+  --color-vfd-glass: #061410;
+  --color-selection: #2dd4bf;
+  --color-ticket: #f4f1ea;
+  --color-ticket-ink: #23201b;
+
+  --font-plate: var(--font-archivo);
+  --font-spec: var(--font-chivo-mono);
+  --font-vfd: var(--font-doto);
+
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-lg: 16px;
+}
+
+:root {
+  color-scheme: dark;
+  --shadow-drop: 0 16px 32px rgba(0, 0, 0, 0.6);
+}
+
+.light {
+  color-scheme: light;
+  --color-panel: #f8fafc;
+  --color-panel-deep: #eef2f7;
+  --color-panel-raised: #ffffff;
+  --color-groove: #e2e8f0;
+  --color-silk: #0f172a;
+  --color-silk-dim: #475569;
+  --color-led: #10b981;
+  --color-led-dim: #a7d9c4;
+  --color-led-ink: #047857;
+  --color-vfd: #34d399;
+  --color-vfd-dim: #2dd4bf;
+  --color-selection: #0f766e;
+  --shadow-drop: 0 16px 32px rgba(15, 23, 42, 0.12);
+}
+
+body {
+  background: var(--color-panel);
+  color: var(--color-silk);
+  font-family: var(--font-plate), system-ui, sans-serif;
+}
+
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--color-led);
+  outline-offset: 2px;
+}
+
+/*
+ * El riel es focusable para que se pueda recorrer con el teclado, pero un
+ * recuadro alrededor de toda la bandeja se lee como un borde de caja, no como
+ * un foco. Se marca con un halo suave por dentro, que acompaña a la curva de
+ * las fichas en vez de encerrarlas.
+ */
+.rail:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-led) 55%, transparent);
+  border-radius: var(--radius-sm);
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility plate-label {
+  font-family: var(--font-spec), monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-silk-dim);
+}
+
+/*
+ * Riel: bandeja recorrible en horizontal. `scroll-snap-stop: always` impide
+ * saltarse piezas con un gesto fuerte y `overscroll-behavior-x: contain` evita
+ * que el swipe dispare el «atrás» del navegador. El scroll suave se activa solo
+ * sin preferencia de movimiento reducido: `scroll-behavior` no la respeta por
+ * su cuenta, la spec solo permite al navegador ignorarla.
+ */
+@utility rail {
+  display: flex;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  cursor: grab;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  & > * {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    flex: 0 0 auto;
+  }
+  &[data-dragging='true'] {
+    cursor: grabbing;
+    user-select: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rail {
+    scroll-behavior: smooth;
+  }
+}
+
+/*
+ * Onda de separación entre secciones: sustituye la línea recta por un frente
+ * curvo que hace que dos bandas contiguas se solapen en vez de apilarse. Es un
+ * SVG servido en el HTML, sin JavaScript y sin coste por frame; la deriva
+ * lateral solo se activa cuando el visitante no ha pedido menos movimiento.
+ */
+/*
+ * Cuerpo de artículo: el markdown del CMS ya convertido a HTML en el servidor.
+ * Se estiliza por descendencia porque el contenido no lleva clases; la medida
+ * se acota para que el texto no cruce toda la pantalla.
+ */
+@utility prose-panel {
+  color: var(--color-silk-dim);
+  line-height: 1.75;
+
+  & h2 {
+    margin-block: 2.5rem 1rem;
+    font-size: 1.875rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--color-silk);
+  }
+  & h3 {
+    margin-block: 2rem 0.75rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-silk);
+  }
+  & p {
+    margin-block: 1rem;
+  }
+  & ul,
+  & ol {
+    margin-block: 1rem;
+    padding-inline-start: 1.25rem;
+  }
+  & ul {
+    list-style: disc;
+  }
+  & ol {
+    list-style: decimal;
+  }
+  & li {
+    margin-block: 0.4rem;
+  }
+  & strong {
+    color: var(--color-silk);
+    font-weight: 600;
+  }
+  & a {
+    color: var(--color-led-ink);
+    text-underline-offset: 3px;
+    text-decoration-line: underline;
+  }
+  & code {
+    font-family: var(--font-spec), monospace;
+    font-size: 0.85em;
+    color: var(--color-selection);
+  }
+  & pre {
+    margin-block: 1.5rem;
+    overflow-x: auto;
+    border: 1px solid var(--color-groove);
+    border-radius: var(--radius-sm);
+    background: var(--color-panel-deep);
+    padding: 1.25rem;
+  }
+  & pre code {
+    color: var(--color-silk-dim);
+  }
+  /*
+   * Shiki resalta en el servidor y emite el color de cada token en dos
+   * variables, una por tema (`defaultColor: false`). Aquí se elige cuál manda
+   * según la clase `light` del panel —el tema se conmuta a mano, no por media
+   * query— y se ignora a propósito el fondo que trae Shiki: el bloque de
+   * código sigue siendo la placa hundida del mundo, solo cambia la luz de los
+   * tokens.
+   */
+  & .shiki,
+  & .shiki span {
+    color: var(--shiki-dark);
+    font-style: var(--shiki-dark-font-style);
+    font-weight: var(--shiki-dark-font-weight);
+  }
+  .light & .shiki,
+  .light & .shiki span {
+    color: var(--shiki-light);
+    font-style: var(--shiki-light-font-style);
+    font-weight: var(--shiki-light-font-weight);
+  }
+  & pre.shiki {
+    background: var(--color-panel-deep);
+  }
+  /*
+   * Diagrama mermaid: hasta que el runner lo dibuja es el bloque de código de
+   * Shiki y no necesita nada; una vez dibujado, el SVG ocupa la placa entera y
+   * se centra. `max-width` es obligatorio: mermaid emite anchos fijos en el
+   * propio SVG y sin esto un diagrama ancho desborda el artículo en móvil.
+   */
+  & .mermaid-figure {
+    margin-block: 1.5rem;
+  }
+  & .mermaid-figure[data-drawn='true'] {
+    overflow-x: auto;
+    border: 1px solid var(--color-groove);
+    border-radius: var(--radius-sm);
+    background: var(--color-panel-deep);
+    padding: 1.25rem;
+  }
+  & .mermaid-figure svg {
+    display: block;
+    margin-inline: auto;
+    max-width: 100%;
+    height: auto;
+  }
+  & blockquote {
+    margin-block: 1.5rem;
+    border-inline-start: 2px solid var(--color-led);
+    padding-inline-start: 1rem;
+    color: var(--color-silk);
+  }
+  & img {
+    margin-block: 2rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-groove);
+  }
+  & hr {
+    margin-block: 2.5rem;
+    border-color: var(--color-groove);
+  }
+  & .table-scroll {
+    margin-block: 1.5rem;
+    overflow-x: auto;
+  }
+  & table {
+    width: max-content;
+    min-width: 100%;
+    font-size: 0.875rem;
+  }
+  & th,
+  & td {
+    border-bottom: 1px solid var(--color-groove);
+    padding: 0.5rem 0.75rem;
+    text-align: start;
+  }
+  & th {
+    color: var(--color-silk);
+  }
+}
+
+@keyframes wave-drift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .wave-drift {
+    animation: wave-drift 26s linear infinite;
+  }
+}
+
+/*
+ * Revelado al entrar en viewport, con la línea de tiempo de scroll del propio
+ * navegador: sin IntersectionObserver, sin JavaScript y sin coste por frame
+ * fuera del compositor. Va dentro de `@supports` porque la propiedad aún no es
+ * interoperable; donde no exista, el contenido ya está visible y no pasa nada.
+ */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: reveal-in linear both;
+      animation-timeline: view();
+      animation-range: entry 5% cover 26%;
+    }
+  }
+}
+
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes vfd-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.vfd-marquee {
+  animation: vfd-marquee 28s linear infinite;
+}
+
+/*
+ * Secuencia de encendido de la máquina (momento focal, una sola vez al cargar):
+ * el LED de servicio parpadea y queda fijo, el vidrio VFD hace el flicker de
+ * tubo y arranca la marquesina, y el botón de CONTACTO recibe su superficie.
+ */
+@keyframes led-boot {
+  0%,
+  18%,
+  42% {
+    opacity: 0;
+  }
+  10%,
+  30%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes vfd-boot {
+  0% {
+    opacity: 0;
+  }
+  35% {
+    opacity: 0.55;
+  }
+  45% {
+    opacity: 0.08;
+  }
+  60% {
+    opacity: 0.85;
+  }
+  70% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes cta-boot {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes led-standby {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.boot-led {
+  animation: led-boot 700ms steps(1, end) backwards;
+}
+
+.boot-vfd {
+  animation: vfd-boot 650ms 250ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.boot-cta {
+  animation: cta-boot 500ms 750ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/*
+ * Destello de la tecla retroiluminada: una banda de luz cruza la tecla al
+ * paso del cabezal del escáner del hero. El periodo (5 s) es el mismo que el
+ * ciclo del escáner (3,6 s de pasada + 1,4 s de pausa en grid-scan.tsx) y el
+ * retardo aproxima el instante en que el cabezal cruza la zona del botón:
+ * ambos bucles son constantes, así que quedan acompasados sin JavaScript.
+ */
+@keyframes cta-glint {
+  0% {
+    transform: translateX(-130%) skewX(-18deg);
+  }
+  9% {
+    transform: translateX(380%) skewX(-18deg);
+  }
+  100% {
+    transform: translateX(380%) skewX(-18deg);
+  }
+}
+
+.cta-glint {
+  background: linear-gradient(
+    105deg,
+    transparent,
+    rgba(255, 255, 255, 0.45),
+    transparent
+  );
+  animation: cta-glint 5s linear 900ms infinite;
+  transform: translateX(-130%) skewX(-18deg);
+}
+
+.led-standby {
+  animation: led-standby 2.8s ease-in-out 1.2s infinite;
+}
+
+/*
+ * Reduced motion por propiedad, no por lista de clases: toda animación nueva
+ * queda cubierta sin tener que recordar registrarla. Las transiciones de
+ * color/opacidad se conservan; el movimiento y el smooth-scroll no.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}

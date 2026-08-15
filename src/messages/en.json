@@ -1,0 +1,88 @@
+{
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "skills": "Skills",
+    "experience": "Experience",
+    "work": "Projects",
+    "testimonials": "Testimonials",
+    "blog": "Blog",
+    "contact": "Contact"
+  },
+  "a11y": {
+    "skipToContent": "Skip to content",
+    "switchLocale": "Switch language",
+    "toggleTheme": "Toggle theme",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "machine": {
+    "statusOnline": "IN SERVICE",
+    "sectionIndex": "PANEL INDEX",
+    "contactAction": "LET'S TALK",
+    "pause": "Pause the display scrolling",
+    "play": "Resume the display scrolling",
+    "articleIndex": "Contents",
+    "logPosition": "Log position"
+  },
+  "rail": {
+    "previous": "Move back in the tray",
+    "next": "Move forward in the tray",
+    "goTo": "Go to position",
+    "allPosts": "See all posts",
+    "allProjects": "See all projects",
+    "skills": "{category} skills, horizontally scrollable list",
+    "work": "Featured projects, horizontally scrollable list",
+    "testimonials": "Testimonials, horizontally scrollable list",
+    "experienceTimeline": "Career timeline, stage selector"
+  },
+  "sections": {
+    "skills": {
+      "title": "Skills"
+    },
+    "experience": {
+      "title": "Experience"
+    },
+    "work": {
+      "title": "Featured projects"
+    },
+    "testimonials": {
+      "title": "Testimonials"
+    },
+    "blog": {
+      "title": "Latest posts"
+    },
+    "contact": {
+      "title": "Contact"
+    }
+  },
+  "status": {
+    "completed": "COMPLETED",
+    "inProgress": "IN PROGRESS"
+  },
+  "footer": {
+    "rights": "All rights reserved"
+  },
+  "contact": {
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "phone": "Phone",
+    "message": "Message",
+    "messagePlaceholder": "Tell me about your project…",
+    "submit": "Send message",
+    "sending": "Sending…",
+    "requiredNote": "Fields marked with * are required",
+    "success": "Message sent. I'll reply soon.",
+    "direct": "Direct email",
+    "channels": "Also here",
+    "verification": "Verification",
+    "awaitingVerification": "Complete the verification to send"
+  },
+  "pager": {
+    "previous": "Previous",
+    "next": "Next",
+    "position": "Page",
+    "loading": "Loading…"
+  }
+}

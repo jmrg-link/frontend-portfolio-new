@@ -1,0 +1,88 @@
+{
+  "nav": {
+    "home": "Inicio",
+    "about": "Sobre mí",
+    "skills": "Habilidades",
+    "experience": "Experiencia",
+    "work": "Proyectos",
+    "testimonials": "Testimonios",
+    "blog": "Blog",
+    "contact": "Contacto"
+  },
+  "a11y": {
+    "skipToContent": "Saltar al contenido",
+    "switchLocale": "Cambiar idioma",
+    "toggleTheme": "Cambiar tema",
+    "openMenu": "Abrir el menú",
+    "closeMenu": "Cerrar el menú"
+  },
+  "machine": {
+    "statusOnline": "EN SERVICIO",
+    "sectionIndex": "ÍNDICE DE PANEL",
+    "contactAction": "HABLEMOS",
+    "pause": "Pausar el desplazamiento del display",
+    "play": "Reanudar el desplazamiento del display",
+    "articleIndex": "Índice",
+    "logPosition": "Posición del registro"
+  },
+  "rail": {
+    "previous": "Retroceder en la bandeja",
+    "next": "Avanzar en la bandeja",
+    "goTo": "Ir a la posición",
+    "allPosts": "Ver todas las entradas",
+    "allProjects": "Ver todos los proyectos",
+    "skills": "Habilidades de {category}, lista con desplazamiento horizontal",
+    "work": "Proyectos destacados, lista con desplazamiento horizontal",
+    "testimonials": "Testimonios, lista con desplazamiento horizontal",
+    "experienceTimeline": "Cronología profesional, selector de etapas"
+  },
+  "sections": {
+    "skills": {
+      "title": "Habilidades"
+    },
+    "experience": {
+      "title": "Experiencia"
+    },
+    "work": {
+      "title": "Proyectos destacados"
+    },
+    "testimonials": {
+      "title": "Testimonios"
+    },
+    "blog": {
+      "title": "Últimas entradas"
+    },
+    "contact": {
+      "title": "Contacto"
+    }
+  },
+  "status": {
+    "completed": "COMPLETADO",
+    "inProgress": "EN CURSO"
+  },
+  "footer": {
+    "rights": "Todos los derechos reservados"
+  },
+  "contact": {
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "email": "Email",
+    "phone": "Teléfono",
+    "message": "Consulta",
+    "messagePlaceholder": "Cuéntame sobre tu proyecto…",
+    "submit": "Enviar mensaje",
+    "sending": "Enviando…",
+    "requiredNote": "Los campos marcados con * son obligatorios",
+    "success": "Mensaje enviado. Te respondo pronto.",
+    "direct": "Correo directo",
+    "channels": "También aquí",
+    "verification": "Verificación",
+    "awaitingVerification": "Completa la verificación para enviar"
+  },
+  "pager": {
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "position": "Página",
+    "loading": "Cargando…"
+  }
+}

@@ -1,0 +1,4730 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "backend-portfolio API",
+    "description": "API privada del portfolio (jmrg.dev). Toda ruta exige un token Clerk salvo el health check.",
+    "version": "1.0.0"
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Token de Clerk: session_token (admin), api_key o m2m_token."
+      }
+    },
+    "schemas": {}
+  },
+  "paths": {
+    "/api/health": { "get": { "responses": { "200": { "description": "Default Response" } } } },
+    "/api/v1/blog": {
+      "get": {
+        "summary": "Listar posts publicados",
+        "tags": ["Blog"],
+        "parameters": [
+          {
+            "schema": { "type": "string", "minLength": 2, "maxLength": 5 },
+            "in": "query",
+            "name": "locale",
+            "required": false
+          },
+          { "schema": { "type": "string" }, "in": "query", "name": "page", "required": false },
+          { "schema": { "type": "string" }, "in": "query", "name": "limit", "required": false }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": { "type": "string" },
+                          "slug": { "type": "string" },
+                          "title": { "type": "string" },
+                          "description": { "type": "string" },
+                          "content": { "type": "string" },
+                          "date": { "type": "string", "format": "date-time" },
+                          "published": { "type": "boolean" },
+                          "featured": { "type": "boolean" },
+                          "locale": { "type": "string" },
+                          "tags": { "type": "array", "items": { "type": "string" } },
+                          "image": { "nullable": true, "type": "string" },
+                          "author": { "type": "string" },
+                          "readingTime": { "nullable": true, "type": "number" },
+                          "createdAt": { "type": "string", "format": "date-time" },
+                          "updatedAt": { "type": "string", "format": "date-time" }
+                        },
+                        "required": [
+                          "slug",
+                          "title",
+                          "description",
+                          "date",
+                          "published",
+                          "featured",
+                          "locale",
+                          "tags",
+                          "author"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "_id": { "type": "string" },
+                              "slug": { "type": "string" },
+                              "title": { "type": "string" },
+                              "description": { "type": "string" },
+                              "content": { "type": "string" },
+                              "date": { "type": "string", "format": "date-time" },
+                              "published": { "type": "boolean" },
+                              "featured": { "type": "boolean" },
+                              "locale": { "type": "string" },
+                              "tags": { "type": "array", "items": { "type": "string" } },
+                              "image": { "nullable": true, "type": "string" },
+                              "author": { "type": "string" },
+                              "readingTime": { "nullable": true, "type": "number" },
+                              "createdAt": { "type": "string", "format": "date-time" },
+                              "updatedAt": { "type": "string", "format": "date-time" }
+                            },
+                            "required": [
+                              "slug",
+                              "title",
+                              "description",
+                              "date",
+                              "published",
+                              "featured",
+                              "locale",
+                              "tags",
+                              "author"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "meta": {
+                          "type": "object",
+                          "properties": {
+                            "page": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "limit": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "countTotal": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "nextPage": { "type": "boolean" },
+                            "previousPage": { "type": "boolean" }
+                          },
+                          "required": ["page", "limit", "countTotal", "nextPage", "previousPage"],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": ["data", "meta"],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/blog/{slug}": {
+      "get": {
+        "summary": "Obtener un post publicado por su slug",
+        "tags": ["Blog"],
+        "parameters": [
+          {
+            "schema": { "default": "es", "type": "string", "minLength": 2, "maxLength": 5 },
+            "in": "query",
+            "name": "locale",
+            "required": false
+          },
+          {
+            "schema": { "type": "string", "minLength": 1 },
+            "in": "path",
+            "name": "slug",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "_id": { "type": "string" },
+                    "slug": { "type": "string" },
+                    "title": { "type": "string" },
+                    "description": { "type": "string" },
+                    "content": { "type": "string" },
+                    "date": { "type": "string", "format": "date-time" },
+                    "published": { "type": "boolean" },
+                    "featured": { "type": "boolean" },
+                    "locale": { "type": "string" },
+                    "tags": { "type": "array", "items": { "type": "string" } },
+                    "image": { "nullable": true, "type": "string" },
+                    "author": { "type": "string" },
+                    "readingTime": { "nullable": true, "type": "number" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                  },
+                  "required": [
+                    "slug",
+                    "title",
+                    "description",
+                    "date",
+                    "published",
+                    "featured",
+                    "locale",
+                    "tags",
+                    "author"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/blog": {
+      "get": {
+        "summary": "Listar todos los posts, incluidos los borradores",
+        "tags": ["Blog"],
+        "parameters": [
+          {
+            "schema": { "type": "string", "minLength": 2, "maxLength": 5 },
+            "in": "query",
+            "name": "locale",
+            "required": false
+          },
+          { "schema": { "type": "string" }, "in": "query", "name": "page", "required": false },
+          { "schema": { "type": "string" }, "in": "query", "name": "limit", "required": false }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": { "type": "string" },
+                          "slug": { "type": "string" },
+                          "title": { "type": "string" },
+                          "description": { "type": "string" },
+                          "content": { "type": "string" },
+                          "date": { "type": "string", "format": "date-time" },
+                          "published": { "type": "boolean" },
+                          "featured": { "type": "boolean" },
+                          "locale": { "type": "string" },
+                          "tags": { "type": "array", "items": { "type": "string" } },
+                          "image": { "nullable": true, "type": "string" },
+                          "author": { "type": "string" },
+                          "readingTime": { "nullable": true, "type": "number" },
+                          "createdAt": { "type": "string", "format": "date-time" },
+                          "updatedAt": { "type": "string", "format": "date-time" }
+                        },
+                        "required": [
+                          "slug",
+                          "title",
+                          "description",
+                          "date",
+                          "published",
+                          "featured",
+                          "locale",
+                          "tags",
+                          "author"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "_id": { "type": "string" },
+                              "slug": { "type": "string" },
+                              "title": { "type": "string" },
+                              "description": { "type": "string" },
+                              "content": { "type": "string" },
+                              "date": { "type": "string", "format": "date-time" },
+                              "published": { "type": "boolean" },
+                              "featured": { "type": "boolean" },
+                              "locale": { "type": "string" },
+                              "tags": { "type": "array", "items": { "type": "string" } },
+                              "image": { "nullable": true, "type": "string" },
+                              "author": { "type": "string" },
+                              "readingTime": { "nullable": true, "type": "number" },
+                              "createdAt": { "type": "string", "format": "date-time" },
+                              "updatedAt": { "type": "string", "format": "date-time" }
+                            },
+                            "required": [
+                              "slug",
+                              "title",
+                              "description",
+                              "date",
+                              "published",
+                              "featured",
+                              "locale",
+                              "tags",
+                              "author"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "meta": {
+                          "type": "object",
+                          "properties": {
+                            "page": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "limit": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "countTotal": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "nextPage": { "type": "boolean" },
+                            "previousPage": { "type": "boolean" }
+                          },
+                          "required": ["page", "limit", "countTotal", "nextPage", "previousPage"],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": ["data", "meta"],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Crear un post",
+        "tags": ["Blog"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "slug": { "type": "string", "minLength": 1 },
+                  "title": { "type": "string", "minLength": 1 },
+                  "description": { "type": "string", "minLength": 1 },
+                  "content": { "type": "string", "minLength": 1 },
+                  "date": {},
+                  "published": { "type": "boolean" },
+                  "featured": { "type": "boolean" },
+                  "locale": { "type": "string", "minLength": 2, "maxLength": 5 },
+                  "tags": { "type": "array", "items": { "type": "string" } },
+                  "image": { "type": "string", "format": "uri" },
+                  "author": { "type": "string", "minLength": 1 }
+                },
+                "required": ["slug", "title", "description", "content", "date"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "_id": { "type": "string" },
+                    "slug": { "type": "string" },
+                    "title": { "type": "string" },
+                    "description": { "type": "string" },
+                    "content": { "type": "string" },
+                    "date": { "type": "string", "format": "date-time" },
+                    "published": { "type": "boolean" },
+                    "featured": { "type": "boolean" },
+                    "locale": { "type": "string" },
+                    "tags": { "type": "array", "items": { "type": "string" } },
+                    "image": { "nullable": true, "type": "string" },
+                    "author": { "type": "string" },
+                    "readingTime": { "nullable": true, "type": "number" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                  },
+                  "required": [
+                    "slug",
+                    "title",
+                    "description",
+                    "date",
+                    "published",
+                    "featured",
+                    "locale",
+                    "tags",
+                    "author"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/blog/{slug}": {
+      "get": {
+        "summary": "Obtener un post por su slug, incluidos los borradores",
+        "tags": ["Blog"],
+        "parameters": [
+          {
+            "schema": { "default": "es", "type": "string", "minLength": 2, "maxLength": 5 },
+            "in": "query",
+            "name": "locale",
+            "required": false
+          },
+          {
+            "schema": { "type": "string", "minLength": 1 },
+            "in": "path",
+            "name": "slug",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "_id": { "type": "string" },
+                    "slug": { "type": "string" },
+                    "title": { "type": "string" },
+                    "description": { "type": "string" },
+                    "content": { "type": "string" },
+                    "date": { "type": "string", "format": "date-time" },
+                    "published": { "type": "boolean" },
+                    "featured": { "type": "boolean" },
+                    "locale": { "type": "string" },
+                    "tags": { "type": "array", "items": { "type": "string" } },
+                    "image": { "nullable": true, "type": "string" },
+                    "author": { "type": "string" },
+                    "readingTime": { "nullable": true, "type": "number" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                  },
+                  "required": [
+                    "slug",
+                    "title",
+                    "description",
+                    "date",
+                    "published",
+                    "featured",
+                    "locale",
+                    "tags",
+                    "author"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/blog/{id}": {
+      "patch": {
+        "summary": "Actualizar un post",
+        "tags": ["Blog"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string", "minLength": 1 },
+                  "description": { "type": "string", "minLength": 1 },
+                  "content": { "type": "string", "minLength": 1 },
+                  "date": {},
+                  "published": { "type": "boolean" },
+                  "featured": { "type": "boolean" },
+                  "tags": { "type": "array", "items": { "type": "string" } },
+                  "image": { "type": "string", "format": "uri" }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": { "type": "string", "pattern": "^[0-9a-fA-F]{24}$" },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "_id": { "type": "string" },
+                    "slug": { "type": "string" },
+                    "title": { "type": "string" },
+                    "description": { "type": "string" },
+                    "content": { "type": "string" },
+                    "date": { "type": "string", "format": "date-time" },
+                    "published": { "type": "boolean" },
+                    "featured": { "type": "boolean" },
+                    "locale": { "type": "string" },
+                    "tags": { "type": "array", "items": { "type": "string" } },
+                    "image": { "nullable": true, "type": "string" },
+                    "author": { "type": "string" },
+                    "readingTime": { "nullable": true, "type": "number" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                  },
+                  "required": [
+                    "slug",
+                    "title",
+                    "description",
+                    "date",
+                    "published",
+                    "featured",
+                    "locale",
+                    "tags",
+                    "author"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Borrar un post",
+        "tags": ["Blog"],
+        "parameters": [
+          {
+            "schema": { "type": "string", "pattern": "^[0-9a-fA-F]{24}$" },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/blog/{id}/toggle-published": {
+      "post": {
+        "summary": "Alternar el estado de publicación de un post",
+        "tags": ["Blog"],
+        "parameters": [
+          {
+            "schema": { "type": "string", "pattern": "^[0-9a-fA-F]{24}$" },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "_id": { "type": "string" },
+                    "slug": { "type": "string" },
+                    "title": { "type": "string" },
+                    "description": { "type": "string" },
+                    "content": { "type": "string" },
+                    "date": { "type": "string", "format": "date-time" },
+                    "published": { "type": "boolean" },
+                    "featured": { "type": "boolean" },
+                    "locale": { "type": "string" },
+                    "tags": { "type": "array", "items": { "type": "string" } },
+                    "image": { "nullable": true, "type": "string" },
+                    "author": { "type": "string" },
+                    "readingTime": { "nullable": true, "type": "number" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                  },
+                  "required": [
+                    "slug",
+                    "title",
+                    "description",
+                    "date",
+                    "published",
+                    "featured",
+                    "locale",
+                    "tags",
+                    "author"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects": {
+      "get": {
+        "summary": "Listar proyectos publicados",
+        "tags": ["Projects"],
+        "parameters": [
+          {
+            "schema": { "type": "string", "minLength": 2, "maxLength": 5 },
+            "in": "query",
+            "name": "locale",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "_id": { "type": "string" },
+                          "slug": { "type": "string" },
+                          "title": { "type": "string" },
+                          "description": { "type": "string" },
+                          "content": { "type": "string" },
+                          "date": { "type": "string", "format": "date-time" },
+                          "published": { "type": "boolean" },
+                          "featured": { "type": "boolean" },
+                          "locale": { "type": "string" },
+                          "status": { "type": "string" },
+                          "tech": { "type": "array", "items": { "type": "string" } },
+                          "github": { "nullable": true, "type": "string" },
+                          "demo": { "nullable": true, "type": "string" },
+                          "image": { "nullable": true, "type": "string" },
+                          "order": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "createdAt": { "type": "string", "format": "date-time" },
+                          "updatedAt": { "type": "string", "format": "date-time" }
+                        },
+                        "required": [
+                          "slug",
+                          "title",
+                          "description",
+                          "date",
+                          "published",
+                          "featured",
+                          "locale",
+                          "status",
+                          "tech",
+                          "order"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "_id": { "type": "string" },
+                              "slug": { "type": "string" },
+                              "title": { "type": "string" },
+                              "description": { "type": "string" },
+                              "content": { "type": "string" },
+                              "date": { "type": "string", "format": "date-time" },
+                              "published": { "type": "boolean" },
+                              "featured": { "type": "boolean" },
+                              "locale": { "type": "string" },
+                              "status": { "type": "string" },
+                              "tech": { "type": "array", "items": { "type": "string" } },
+                              "github": { "nullable": true, "type": "string" },
+                              "demo": { "nullable": true, "type": "string" },
+                              "image": { "nullable": true, "type": "string" },
+                              "order": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "createdAt": { "type": "string", "format": "date-time" },
+                              "updatedAt": { "type": "string", "format": "date-time" }
+                            },
+                            "required": [
+                              "slug",
+                              "title",
+                              "description",
+                              "date",
+                              "published",
+                              "featured",
+                              "locale",
+                              "status",
+                              "tech",
+                              "order"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "meta": {
+                          "type": "object",
+                          "properties": {
+                            "page": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "limit": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "countTotal": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "nextPage": { "type": "boolean" },
+                            "previousPage": { "type": "boolean" }
+                          },
+                          "required": ["page", "limit", "countTotal", "nextPage", "previousPage"],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": ["data", "meta"],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/featured": {
+      "get": {
+        "summary": "Listar proyectos destacados",
+        "tags": ["Projects"],
+        "parameters": [
+          {
+            "schema": { "type": "string", "minLength": 2, "maxLength": 5 },
+            "in": "query",
+            "name": "locale",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "_id": { "type": "string" },
+                      "slug": { "type": "string" },
+                      "title": { "type": "string" },
+                      "description": { "type": "string" },
+                      "content": { "type": "string" },
+                      "date": { "type": "string", "format": "date-time" },
+                      "published": { "type": "boolean" },
+                      "featured": { "type": "boolean" },
+                      "locale": { "type": "string" },
+                      "status": { "type": "string" },
+                      "tech": { "type": "array", "items": { "type": "string" } },
+                      "github": { "nullable": true, "type": "string" },
+                      "demo": { "nullable": true, "type": "string" },
+                      "image": { "nullable": true, "type": "string" },
+                      "order": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "createdAt": { "type": "string", "format": "date-time" },
+                      "updatedAt": { "type": "string", "format": "date-time" }
+                    },
+                    "required": [
+                      "slug",
+                      "title",
+                      "description",
+                      "date",
+                      "published",
+                      "featured",
+                      "locale",
+                      "status",
+                      "tech",
+                      "order"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{slug}": {
+      "get": {
+        "summary": "Obtener proyecto publicado por slug",
+        "tags": ["Projects"],
+        "parameters": [
+          {
+            "schema": { "default": "es", "type": "string", "minLength": 2, "maxLength": 5 },
+            "in": "query",
+            "name": "locale",
+            "required": false
+          },
+          {
+            "schema": { "type": "string", "minLength": 1 },
+            "in": "path",
+            "name": "slug",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "_id": { "type": "string" },
+                    "slug": { "type": "string" },
+                    "title": { "type": "string" },
+                    "description": { "type": "string" },
+                    "content": { "type": "string" },
+                    "date": { "type": "string", "format": "date-time" },
+                    "published": { "type": "boolean" },
+                    "featured": { "type": "boolean" },
+                    "locale": { "type": "string" },
+                    "status": { "type": "string" },
+                    "tech": { "type": "array", "items": { "type": "string" } },
+                    "github": { "nullable": true, "type": "string" },
+                    "demo": { "nullable": true, "type": "string" },
+                    "image": { "nullable": true, "type": "string" },
+                    "order": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                  },
+                  "required": [
+                    "slug",
+                    "title",
+                    "description",
+                    "date",
+                    "published",
+                    "featured",
+                    "locale",
+                    "status",
+                    "tech",
+                    "order"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cms/site-settings": {
+      "get": {
+        "summary": "Obtener configuración del sitio",
+        "tags": ["CMS"],
+        "parameters": [
+          {
+            "schema": { "default": "es", "type": "string", "minLength": 2, "maxLength": 5 },
+            "in": "query",
+            "name": "locale",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "nullable": true,
+                  "type": "object",
+                  "properties": {
+                    "_id": { "type": "string" },
+                    "locale": { "type": "string" },
+                    "siteName": { "type": "string" },
+                    "siteTitle": { "type": "string" },
+                    "description": { "type": "string" },
+                    "ogImage": { "nullable": true, "type": "string" },
+                    "author": { "type": "string" },
+                    "email": { "type": "string" },
+                    "github": { "nullable": true, "type": "string" },
+                    "linkedin": { "nullable": true, "type": "string" },
+                    "manfred": { "nullable": true, "type": "string" },
+                    "cvUrl": { "nullable": true, "type": "string" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                  },
+                  "required": ["locale", "siteName", "siteTitle", "description", "author", "email"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cms/hero": {
+      "get": {
+        "summary": "Obtener contenido del hero",
+        "tags": ["CMS"],
+        "parameters": [
+          {
+            "schema": { "default": "es", "type": "string", "minLength": 2, "maxLength": 5 },
+            "in": "query",
+            "name": "locale",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "nullable": true,
+                  "type": "object",
+                  "properties": {
+                    "_id": { "type": "string" },
+                    "locale": { "type": "string" },
+                    "greeting": { "type": "string" },
+                    "description": { "type": "string" },
+                    "location": { "type": "string" },
+                    "availability": { "type": "string" },
+                    "profileImage": { "type": "string" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                  },
+                  "required": [
+                    "locale",
+                    "greeting",
+                    "description",
+                    "location",
+                    "availability",
+                    "profileImage"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cms/about": {
+      "get": {
+        "summary": "Obtener contenido de About",
+        "tags": ["CMS"],
+        "parameters": [
+          {
+            "schema": { "default": "es", "type": "string", "minLength": 2, "maxLength": 5 },
+            "in": "query",
+            "name": "locale",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "nullable": true,
+                  "type": "object",
+                  "properties": {
+                    "_id": { "type": "string" },
+                    "locale": { "type": "string" },
+                    "badge": { "type": "string" },
+                    "title": { "type": "string" },
+                    "mainText": { "type": "string" },
+                    "eduTitle": { "type": "string" },
+                    "eduContent": { "type": "string" },
+                    "philTitle": { "type": "string" },
+                    "philContent": { "type": "string" },
+                    "factsTitle": { "type": "string" },
+                    "facts": { "type": "string" },
+                    "image": { "nullable": true, "type": "string" },
+                    "updatedAt": { "type": "string", "format": "date-time" }
+                  },
+                  "required": [
+                    "locale",
+                    "badge",
+                    "title",
+                    "mainText",
+                    "eduTitle",
+                    "eduContent",
+                    "philTitle",
+                    "philContent",
+                    "factsTitle",
+                    "facts"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cms/skills": {
+      "get": {
+        "summary": "Listar skills",
+        "tags": ["CMS"],
+        "parameters": [
+          {
+            "schema": { "type": "string", "minLength": 1 },
+            "in": "query",
+            "name": "category",
+            "required": false
+          },
+          {
+            "schema": { "anyOf": [{ "type": "string" }, { "type": "boolean" }] },
+            "in": "query",
+            "name": "published",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "_id": { "type": "string" },
+                      "name": { "type": "string" },
+                      "category": { "type": "string" },
+                      "icon": { "type": "string" },
+                      "order": { "type": "number" },
+                      "published": { "type": "boolean" },
+                      "createdAt": { "type": "string", "format": "date-time" },
+                      "updatedAt": { "type": "string", "format": "date-time" }
+                    },
+                    "required": ["name", "category", "icon", "order", "published"],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cms/experiences": {
+      "get": {
+        "summary": "Listar experiencias",
+        "tags": ["CMS"],
+        "parameters": [
+          {
+            "schema": { "default": "es", "type": "string", "minLength": 2, "maxLength": 5 },
+            "in": "query",
+            "name": "locale",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "_id": { "type": "string" },
+                      "locale": { "type": "string" },
+                      "company": { "type": "string" },
+                      "position": { "type": "string" },
+                      "period": { "type": "string" },
+                      "tasks": { "type": "array", "items": { "type": "string" } },
+                      "color": { "type": "string" },
+                      "order": { "type": "number" },
+                      "published": { "type": "boolean" },
+                      "createdAt": { "type": "string", "format": "date-time" },
+                      "updatedAt": { "type": "string", "format": "date-time" }
+                    },
+                    "required": [
+                      "locale",
+                      "company",
+                      "position",
+                      "period",
+                      "tasks",
+                      "color",
+                      "order",
+                      "published"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cms/testimonials": {
+      "get": {
+        "summary": "Listar testimonios",
+        "tags": ["CMS"],
+        "parameters": [
+          {
+            "schema": { "default": "es", "type": "string", "minLength": 2, "maxLength": 5 },
+            "in": "query",
+            "name": "locale",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "_id": { "type": "string" },
+                      "locale": { "type": "string" },
+                      "author": { "type": "string" },
+                      "initials": { "type": "string" },
+                      "position": { "type": "string" },
+                      "text": { "type": "string" },
+                      "date": { "type": "string" },
+                      "gradient": { "type": "string" },
+                      "order": { "type": "number" },
+                      "published": { "type": "boolean" },
+                      "createdAt": { "type": "string", "format": "date-time" },
+                      "updatedAt": { "type": "string", "format": "date-time" }
+                    },
+                    "required": [
+                      "locale",
+                      "author",
+                      "initials",
+                      "position",
+                      "text",
+                      "date",
+                      "gradient",
+                      "order",
+                      "published"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/storage/download-url": {
+      "get": {
+        "summary": "Obtener URL prefirmada de descarga",
+        "tags": ["Storage"],
+        "parameters": [
+          {
+            "schema": { "type": "string", "minLength": 1 },
+            "in": "query",
+            "name": "key",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "url": { "type": "string" } },
+                  "required": ["url"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/storage/upload-url": {
+      "post": {
+        "summary": "Obtener URL prefirmada de subida",
+        "tags": ["Storage"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "^[a-zA-Z0-9\\-_/]+\\.[a-z]+$"
+                  },
+                  "contentType": {
+                    "type": "string",
+                    "enum": ["image/png", "image/jpeg", "image/webp", "image/avif"]
+                  }
+                },
+                "required": ["key", "contentType"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "uploadUrl": { "type": "string" },
+                    "key": { "type": "string" },
+                    "expiresIn": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": ["uploadUrl", "key", "expiresIn"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/storage/objects": {
+      "get": {
+        "summary": "Listar objetos del bucket",
+        "tags": ["Storage"],
+        "parameters": [
+          {
+            "schema": { "default": "", "type": "string" },
+            "in": "query",
+            "name": "prefix",
+            "required": false
+          },
+          {
+            "schema": { "type": "string" },
+            "in": "query",
+            "name": "continuationToken",
+            "required": false
+          },
+          {
+            "schema": { "default": 100, "type": "number", "minimum": 1, "maximum": 200 },
+            "in": "query",
+            "name": "maxKeys",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "objects": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": { "type": "string" },
+                          "size": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "lastModified": { "type": "string", "format": "date-time" }
+                        },
+                        "required": ["key", "size", "lastModified"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "folders": { "type": "array", "items": { "type": "string" } },
+                    "nextToken": { "type": "string" },
+                    "prefix": { "type": "string" }
+                  },
+                  "required": ["objects", "folders", "prefix"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Borrar un objeto",
+        "tags": ["Storage"],
+        "parameters": [
+          {
+            "schema": { "type": "string", "minLength": 1 },
+            "in": "query",
+            "name": "key",
+            "required": true
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/storage/objects/count": {
+      "get": {
+        "summary": "Contar objetos bajo un prefijo",
+        "tags": ["Storage"],
+        "parameters": [
+          {
+            "schema": { "default": "", "type": "string" },
+            "in": "query",
+            "name": "prefix",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "prefix": { "type": "string" },
+                    "totalObjects": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "totalBytes": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": ["prefix", "totalObjects", "totalBytes"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/storage/objects/copy": {
+      "post": {
+        "summary": "Copiar un objeto",
+        "tags": ["Storage"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sourceKey": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "^[a-zA-Z0-9\\-_/.]+$"
+                  },
+                  "destKey": { "type": "string", "minLength": 1, "pattern": "^[a-zA-Z0-9\\-_/.]+$" }
+                },
+                "required": ["sourceKey", "destKey"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/storage/objects/bulk-delete": {
+      "post": {
+        "summary": "Borrado masivo de objetos",
+        "tags": ["Storage"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "keys": {
+                    "minItems": 1,
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": { "type": "string", "minLength": 1 }
+                  }
+                },
+                "required": ["keys"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "failed": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": ["deleted", "failed", "total"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/storage/notify-upload": {
+      "post": {
+        "summary": "Notificar subida completada",
+        "tags": ["Storage"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "key": { "type": "string", "minLength": 1 } },
+                "required": ["key"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/storage/health": {
+      "get": {
+        "summary": "Estado del almacenamiento",
+        "tags": ["Storage"],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "s3": { "type": "boolean" },
+                    "database": { "type": "boolean" },
+                    "timestamp": { "type": "string" }
+                  },
+                  "required": ["s3", "database", "timestamp"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/dashboard/recent-activity": {
+      "get": {
+        "summary": "Actividad reciente: 5 posts + 5 proyectos, top 10 por última modificación",
+        "tags": ["Dashboard"],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": { "type": "string", "enum": ["post", "project"] },
+                      "_id": { "type": "string" },
+                      "slug": { "type": "string" },
+                      "title": { "type": "string" },
+                      "locale": { "type": "string" },
+                      "date": { "type": "string", "format": "date-time" },
+                      "published": { "type": "boolean" }
+                    },
+                    "required": ["type", "slug", "title", "locale", "published"],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "summary": "Identidad verificada de la petición actual",
+        "tags": ["Auth"],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tokenType": {
+                      "type": "string",
+                      "enum": ["session_token", "api_key", "m2m_token"]
+                    },
+                    "userId": { "nullable": true, "type": "string" },
+                    "email": { "nullable": true, "type": "string" }
+                  },
+                  "required": ["tokenType", "userId", "email"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/dev-token": {
+      "get": {
+        "summary": "Emite un token de sesión del administrador (solo desarrollo) para Postman/Swagger",
+        "tags": ["Auth"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": { "type": "string" },
+                    "expiresInSeconds": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "userId": { "type": "string" },
+                    "email": { "nullable": true, "type": "string" }
+                  },
+                  "required": ["token", "expiresInSeconds", "userId", "email"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users": {
+      "get": {
+        "summary": "Listar usuarios",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "schema": { "type": "integer", "minimum": 1, "maximum": 100 },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+            "in": "query",
+            "name": "offset",
+            "required": false
+          },
+          {
+            "schema": { "type": "string", "minLength": 1 },
+            "in": "query",
+            "name": "query",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "email": { "nullable": true, "type": "string" },
+                          "firstName": { "nullable": true, "type": "string" },
+                          "lastName": { "nullable": true, "type": "string" },
+                          "username": { "nullable": true, "type": "string" },
+                          "imageUrl": { "type": "string" },
+                          "banned": { "type": "boolean" },
+                          "locked": { "type": "boolean" },
+                          "publicMetadata": { "type": "object", "additionalProperties": {} },
+                          "createdAt": { "type": "number" },
+                          "lastSignInAt": { "nullable": true, "type": "number" }
+                        },
+                        "required": [
+                          "id",
+                          "email",
+                          "firstName",
+                          "lastName",
+                          "username",
+                          "imageUrl",
+                          "banned",
+                          "locked",
+                          "publicMetadata",
+                          "createdAt",
+                          "lastSignInAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "totalCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": ["data", "totalCount"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Alta administrativa de usuario",
+        "tags": ["Users"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "emailAddress": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "password": { "type": "string", "minLength": 8 },
+                  "firstName": { "type": "string", "minLength": 1 },
+                  "lastName": { "type": "string", "minLength": 1 },
+                  "username": { "type": "string", "minLength": 1 },
+                  "publicMetadata": { "type": "object", "additionalProperties": {} }
+                },
+                "required": ["emailAddress"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "email": { "nullable": true, "type": "string" },
+                    "firstName": { "nullable": true, "type": "string" },
+                    "lastName": { "nullable": true, "type": "string" },
+                    "username": { "nullable": true, "type": "string" },
+                    "imageUrl": { "type": "string" },
+                    "banned": { "type": "boolean" },
+                    "locked": { "type": "boolean" },
+                    "publicMetadata": { "type": "object", "additionalProperties": {} },
+                    "createdAt": { "type": "number" },
+                    "lastSignInAt": { "nullable": true, "type": "number" }
+                  },
+                  "required": [
+                    "id",
+                    "email",
+                    "firstName",
+                    "lastName",
+                    "username",
+                    "imageUrl",
+                    "banned",
+                    "locked",
+                    "publicMetadata",
+                    "createdAt",
+                    "lastSignInAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/count": {
+      "get": {
+        "summary": "Contar usuarios",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "schema": { "type": "integer", "minimum": 1, "maximum": 100 },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+            "in": "query",
+            "name": "offset",
+            "required": false
+          },
+          {
+            "schema": { "type": "string", "minLength": 1 },
+            "in": "query",
+            "name": "query",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "totalCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": ["totalCount"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/invitations": {
+      "get": {
+        "summary": "Listar invitaciones",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "schema": { "type": "integer", "minimum": 1, "maximum": 100 },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+            "in": "query",
+            "name": "offset",
+            "required": false
+          },
+          {
+            "schema": { "type": "string", "enum": ["pending", "accepted", "revoked", "expired"] },
+            "in": "query",
+            "name": "status",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "email": { "type": "string" },
+                          "status": { "type": "string" },
+                          "url": { "nullable": true, "type": "string" },
+                          "createdAt": { "type": "number" },
+                          "updatedAt": { "type": "number" }
+                        },
+                        "required": ["id", "email", "status", "url", "createdAt", "updatedAt"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "totalCount": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": ["data", "totalCount"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Invitar a un usuario",
+        "tags": ["Users"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "emailAddress": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "redirectUrl": { "type": "string", "format": "uri" },
+                  "publicMetadata": { "type": "object", "additionalProperties": {} },
+                  "expiresInDays": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }
+                },
+                "required": ["emailAddress"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "email": { "type": "string" },
+                    "status": { "type": "string" },
+                    "url": { "nullable": true, "type": "string" },
+                    "createdAt": { "type": "number" },
+                    "updatedAt": { "type": "number" }
+                  },
+                  "required": ["id", "email", "status", "url", "createdAt", "updatedAt"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/invitations/{id}": {
+      "delete": {
+        "summary": "Revocar invitación",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "schema": { "type": "string", "minLength": 1 },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "email": { "type": "string" },
+                    "status": { "type": "string" },
+                    "url": { "nullable": true, "type": "string" },
+                    "createdAt": { "type": "number" },
+                    "updatedAt": { "type": "number" }
+                  },
+                  "required": ["id", "email", "status", "url", "createdAt", "updatedAt"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{id}": {
+      "get": {
+        "summary": "Obtener usuario por id",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "schema": { "type": "string", "minLength": 1 },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "email": { "nullable": true, "type": "string" },
+                    "firstName": { "nullable": true, "type": "string" },
+                    "lastName": { "nullable": true, "type": "string" },
+                    "username": { "nullable": true, "type": "string" },
+                    "imageUrl": { "type": "string" },
+                    "banned": { "type": "boolean" },
+                    "locked": { "type": "boolean" },
+                    "publicMetadata": { "type": "object", "additionalProperties": {} },
+                    "createdAt": { "type": "number" },
+                    "lastSignInAt": { "nullable": true, "type": "number" }
+                  },
+                  "required": [
+                    "id",
+                    "email",
+                    "firstName",
+                    "lastName",
+                    "username",
+                    "imageUrl",
+                    "banned",
+                    "locked",
+                    "publicMetadata",
+                    "createdAt",
+                    "lastSignInAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Actualizar usuario",
+        "tags": ["Users"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "firstName": { "type": "string", "minLength": 1 },
+                  "lastName": { "type": "string", "minLength": 1 },
+                  "username": { "type": "string", "minLength": 1 },
+                  "publicMetadata": { "type": "object", "additionalProperties": {} }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": { "type": "string", "minLength": 1 },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string" },
+                    "email": { "nullable": true, "type": "string" },
+                    "firstName": { "nullable": true, "type": "string" },
+                    "lastName": { "nullable": true, "type": "string" },
+                    "username": { "nullable": true, "type": "string" },
+                    "imageUrl": { "type": "string" },
+                    "banned": { "type": "boolean" },
+                    "locked": { "type": "boolean" },
+                    "publicMetadata": { "type": "object", "additionalProperties": {} },
+                    "createdAt": { "type": "number" },
+                    "lastSignInAt": { "nullable": true, "type": "number" }
+                  },
+                  "required": [
+                    "id",
+                    "email",
+                    "firstName",
+                    "lastName",
+                    "username",
+                    "imageUrl",
+                    "banned",
+                    "locked",
+                    "publicMetadata",
+                    "createdAt",
+                    "lastSignInAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Borrar usuario",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "schema": { "type": "string", "minLength": 1 },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": { "type": "string" },
+                    "instance": { "type": "string" }
+                  },
+                  "required": ["type", "title", "status"],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "servers": [
+    { "url": "https://localhost:3001", "description": "Desarrollo local (HTTP/2 + TLS)" }
+  ],
+  "security": [{ "bearerAuth": [] }]
+}
