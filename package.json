@@ -10,10 +10,16 @@
     "start:standalone": "cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/ && API_AUTH_DEV_TOKEN=true NODE_EXTRA_CA_CERTS=\"$PWD/../backend-portfolio-new/certs/localhost.pem\" node .next/standalone/server.js",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "verify": "biome ci . && pnpm typecheck && pnpm lint && pnpm build && pnpm verify:no-secrets",
+    "test": "playwright test",
+    "test:ci": "playwright test --reporter=github",
+    "verify": "biome ci . && pnpm typecheck && pnpm lint && pnpm build && pnpm verify:no-secrets && pnpm test",
     "format": "biome format --write .",
     "verify:no-secrets": "rg -c 'BACKEND_API_TOKEN|dev-token|Bearer ' .next/static 2>/dev/null && echo 'FUGA: secretos en el bundle' && exit 1 || echo 'OK: bundle limpio'",
-    "openapi": "openapi-typescript openapi.json -o src/lib/api/schema.d.ts"
+    "openapi": "openapi-typescript openapi.json -o src/lib/api/schema.d.ts",
+    "prepare": "husky"
+  },
+  "engines": {
+    "node": ">=24 <25"
   },
   "dependencies": {
     "@marsidev/react-turnstile": "^1.5.4",
@@ -31,6 +37,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.6",
+    "@commitlint/cli": "21.2.2",
+    "@commitlint/config-conventional": "21.2.2",
     "@playwright/test": "1.62.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
@@ -38,6 +46,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
+    "husky": "9.1.7",
     "openapi-typescript": "^7.13.0",
     "tailwindcss": "^4",
     "typescript": "^5"
