@@ -23,18 +23,18 @@ function formatDate(iso: string, locale: Locale): string {
  * Ficha de artículo: portada, etiquetas, titular y entradilla. Toda la ficha es
  * el enlace, para que la diana sea grande también en táctil.
  *
- * @param priority - Marca esta portada como elemento LCP: se precarga con prioridad alta y sin
- * `lazy`. Corresponde solo a la primera ficha del listado, que es la que abre el viewport;
- * aplicarlo a varias hace que compitan por el ancho de banda y retrasa la que importa.
+ * @param preload - Marca esta portada como elemento LCP: inserta su `<link rel="preload">` en el
+ * head para que el navegador la descubra antes de encontrarla en el cuerpo. Corresponde solo a la
+ * primera ficha del listado; aplicarlo a varias las hace competir por el ancho de banda.
  */
 export function PostCard({
   post,
   locale,
-  priority = false,
+  preload = false,
 }: {
   post: BlogPost;
   locale: Locale;
-  priority?: boolean;
+  preload?: boolean;
 }) {
   return (
     <li>
@@ -48,7 +48,7 @@ export function PostCard({
           width={640}
           height={360}
           sizes="(min-width: 1024px) 22rem, (min-width: 640px) 45vw, 90vw"
-          priority={priority}
+          preload={preload}
           className="aspect-video w-full border-b border-groove object-cover"
         />
         <div className="flex flex-1 flex-col p-6">

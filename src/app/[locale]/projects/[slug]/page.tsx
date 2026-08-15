@@ -130,7 +130,7 @@ export default async function ProjectPage({
             width={1280}
             height={720}
             sizes="(min-width: 768px) 56rem, 100vw"
-            priority
+            preload
             className="mt-12 max-h-[70vh] w-full rounded-sm border border-groove bg-panel object-contain p-4"
           />
 

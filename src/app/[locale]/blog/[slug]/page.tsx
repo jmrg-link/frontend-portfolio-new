@@ -108,7 +108,7 @@ export default async function PostPage({
             width={1280}
             height={720}
             sizes="(min-width: 768px) 48rem, 100vw"
-            priority
+            preload
             className="mt-10 aspect-video w-full rounded-sm border border-groove object-cover"
           />
 

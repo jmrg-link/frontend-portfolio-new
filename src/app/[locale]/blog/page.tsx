@@ -62,7 +62,7 @@ export default async function BlogIndex({ params }: { params: Promise<{ locale: 
                 key={post._id ?? post.slug}
                 post={post}
                 locale={locale}
-                priority={index === 0}
+                preload={index === 0}
               />
             ))}
           </EndlessPosts>

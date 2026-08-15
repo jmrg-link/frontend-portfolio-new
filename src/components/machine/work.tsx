@@ -71,6 +71,7 @@ export function ProductTrays({
                   width={832}
                   height={468}
                   sizes="(min-width: 640px) 26rem, 85vw"
+                  loading={index === 0 ? 'eager' : 'lazy'}
                   className="aspect-video w-full object-contain p-3 opacity-85 saturate-[0.85] transition-[opacity,filter,transform] duration-500 ease-out group-hover:scale-[1.02] group-hover:opacity-100 group-hover:saturate-100"
                   fallback={<div aria-hidden className="aspect-video w-full" />}
                 />
