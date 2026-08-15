@@ -1,13 +1,8 @@
 /**
- * Resolución de las imágenes del CMS. El backend guarda el campo `image` como ruta relativa
- * —`blog/introduccion-clean-code_9.png`, `projects/pokedex-next.png`, `logos/backend-express.jpg`—
- * heredada del monolito, donde resolvían contra su `public/`. Aquí no hay esos ficheros: se
- * sirven desde el CDN, que es exactamente lo que hace el sitio en producción
- * (`/_next/image?url=https%3A%2F%2Fimages.jmrg.dev%2Fblog%2F…`, verificado sobre el HTML
- * desplegado el 2026-08-15).
+ * Resolución de las imágenes del CMS.
  *
- * Sin esto el frontal descartaba toda imagen que no fuera absoluta y el sitio se quedaba sin
- * una sola portada.
+ * El campo `image` de la API es una ruta relativa (`blog/x.png`, `projects/x.png`,
+ * `logos/x.jpg`) que se sirve desde un CDN externo, no desde `public/` de esta aplicación.
  */
 
 /** Origen de las imágenes del CMS; el dominio de producción salvo que el entorno diga otro. */

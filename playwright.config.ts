@@ -1,13 +1,12 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Suite de regresión de maquetación. Corre contra el servidor de desarrollo:
- * reutiliza el que ya esté escuchando en el 3000 y solo arranca uno propio si no lo hay,
- * para no chocar con el que el usuario tiene abierto en su terminal.
+ * Suite de regresión de maquetación. Corre contra el servidor de desarrollo: reutiliza el que ya
+ * escuche en el 3000 y arranca uno propio solo si no lo hay.
  *
- * Las notas de rendimiento NO se miden aquí: eso exige el build de producción en el 3100
- * según `docs/rubrica.md`. Este archivo cubre lo que sí es idéntico en desarrollo —
- * geometría, desbordamientos y tamaño de los destinos táctiles.
+ * Cubre lo que en desarrollo es idéntico a producción: geometría, desbordamientos y tamaño de
+ * los destinos táctiles. Las métricas de rendimiento no se miden aquí, porque exigen el build de
+ * producción.
  */
 export default defineConfig({
   testDir: './tests',

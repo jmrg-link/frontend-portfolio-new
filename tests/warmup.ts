@@ -4,9 +4,8 @@ const BASE_URL = 'http://localhost:3000';
 
 /**
  * Rutas que la suite visita. Se piden una vez antes de empezar porque en `next dev` la primera
- * visita a cada ruta la compila, y esa compilación se come el margen de espera de los tests: con
- * el servidor recién levantado fallaban dos casos de detalle que pasaban al repetirlos. Calentar
- * es más honesto que subir el timeout hasta que deje de fallar.
+ * visita a cada ruta dispara su compilación, y ese tiempo consumiría el margen de espera de los
+ * tests.
  */
 const ROUTES = [
   '/es',

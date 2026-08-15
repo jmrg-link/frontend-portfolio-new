@@ -23,10 +23,9 @@ function formatDate(iso: string, locale: Locale): string {
  * Ficha de artículo: portada, etiquetas, titular y entradilla. Toda la ficha es
  * el enlace, para que la diana sea grande también en táctil.
  *
- * @param priority - Marca esta portada como el elemento LCP: la descarga con prioridad alta y
- * sin `lazy`. Solo la primera ficha del listado debe llevarlo —medido el 2026-08-15, esa imagen
- * ES el LCP de `/blog` y con `loading="lazy"` Lighthouse puntuaba 0 en descubrimiento de la
- * petición—; ponerlo en más de una compite por el ancho de banda y empeora justo lo que arregla.
+ * @param priority - Marca esta portada como elemento LCP: se precarga con prioridad alta y sin
+ * `lazy`. Corresponde solo a la primera ficha del listado, que es la que abre el viewport;
+ * aplicarlo a varias hace que compitan por el ancho de banda y retrasa la que importa.
  */
 export function PostCard({
   post,

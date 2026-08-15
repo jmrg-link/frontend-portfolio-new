@@ -4,15 +4,14 @@ import type { ReactNode } from 'react';
 import { resolveImageUrl } from '@/lib/images';
 
 /**
- * Imagen que viene del CMS, con su ruta ya resuelta contra el origen que corresponda.
+ * Imagen del CMS con su ruta resuelta contra el origen que corresponda.
  *
- * Existe para que el guard viva en un solo sitio: antes cada superficie repetía la condición
- * `image?.startsWith('https://')` y, cuando el CMS pasó a servir rutas relativas, las cinco
- * fallaron a la vez y el sitio se quedó sin una sola imagen.
+ * Es el único punto que decide si una imagen del CMS es representable, de modo que un cambio en
+ * el formato del campo `image` afecta a un solo sitio y no a cada superficie que la pinta.
  *
- * @param src - Campo `image` tal cual llega del API, absoluto o relativo.
- * @param fallback - Qué pintar cuando no hay imagen. Por defecto nada; las fichas que reservan
- * el hueco para no desplazar el resto del layout pasan aquí su marcador.
+ * @param src - Campo `image` tal cual llega de la API, absoluto o relativo.
+ * @param fallback - Qué pintar cuando no hay imagen resoluble. Por defecto nada; las fichas que
+ * reservan el hueco para no desplazar el resto del layout pasan aquí su marcador.
  */
 export function CmsImage({
   src,

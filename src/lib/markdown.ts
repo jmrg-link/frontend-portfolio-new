@@ -82,15 +82,13 @@ async function highlight(code: string, lang: string): Promise<string> {
 }
 
 /**
- * Envuelve cada tabla en un contenedor desplazable. Una tabla del CMS con celdas anchas
- * —rutas, fragmentos de código— desborda el viewport en móvil y arrastra la página entera en
- * horizontal (medido: 153 px de desbordamiento a 360 px de ancho). El contenedor lleva
- * `tabindex` porque una región con scroll que no es alcanzable con el teclado deja el contenido
- * fuera de alcance de quien no usa ratón.
+ * Envuelve cada tabla en un contenedor desplazable, de modo que una tabla más ancha que el
+ * viewport se desplace dentro de su caja en lugar de arrastrar la página en horizontal. El
+ * contenedor recibe `tabindex` para que esa región con scroll sea alcanzable con el teclado.
  *
- * Se resuelve sobre el HTML ya generado, no con un renderer propio: `marked` no expone el
- * renderer base para post-procesarlo, y GFM no admite tablas anidadas, así que la sustitución
- * por pares es inequívoca.
+ * La sustitución se hace sobre el HTML ya generado porque `marked` no expone su renderer base
+ * para post-procesarlo. GFM no admite tablas anidadas, así que reemplazar por pares de etiquetas
+ * es inequívoco.
  *
  * @param html - HTML producido por `marked`.
  * @returns El mismo HTML con cada `<table>` dentro de su contenedor desplazable.

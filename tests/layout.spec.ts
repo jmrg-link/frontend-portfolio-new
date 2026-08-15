@@ -7,9 +7,9 @@ import { expect, type Page, test } from '@playwright/test';
 const ROUTES = ['/es', '/es/blog', '/es/proyectos', '/en', '/en/blog', '/en/projects'];
 
 /**
- * Anchos elegidos por lo que rompen, no por catálogo de dispositivos: 360 y 414 son móvil real;
- * 768 es donde Tailwind activa `md:`; 820, 880 y 900 acotan el tramo en el que la cabecera
- * desbordaba (768–895 medido el 2026-08-15); el resto son escritorio.
+ * Anchos de referencia: 360 y 414 corresponden a móvil, 768 es el corte `md:` de Tailwind, 820,
+ * 880 y 900 cubren el tramo de tablet en el que la cabecera cambia de disposición, y el resto son
+ * tamaños de escritorio.
  */
 const WIDTHS = [360, 414, 768, 820, 880, 900, 1024, 1280, 1440];
 
