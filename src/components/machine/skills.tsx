@@ -20,6 +20,7 @@ import { SkillTrays, type Tray } from './skill-trays';
 
 const CATEGORY_PREFIX: Record<string, string> = {
   backend: 'B',
+  ai: 'I',
   frontend: 'F',
   database: 'D',
   devops: 'V',
@@ -27,7 +28,20 @@ const CATEGORY_PREFIX: Record<string, string> = {
   architecture: 'A',
 };
 
-const CATEGORY_ORDER = ['backend', 'frontend', 'database', 'devops', 'sysadmin', 'architecture'];
+/**
+ * Orden de las bandejas del panel. La lista es exhaustiva: una categoría que el CMS sirva y no
+ * figure aquí no se pinta, de modo que incorporar una familia nueva de skills pasa por esta
+ * constante.
+ */
+const CATEGORY_ORDER = [
+  'backend',
+  'ai',
+  'frontend',
+  'database',
+  'devops',
+  'sysadmin',
+  'architecture',
+];
 
 /**
  * Agrupa las skills por categoría respetando el orden del panel y el `order`
