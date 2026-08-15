@@ -86,11 +86,14 @@ function devTokenAllowed(): boolean {
  * el dev-token cacheado (renovado cinco minutos antes de caducar) cuando el
  * entorno lo permite.
  *
+ * @param forceRefresh - Descarta el token en memoria y pide uno nuevo saltándose la caché de
+ * datos. Necesario cuando el backend rechaza el token vigente: sin esto, la respuesta cacheada
+ * devolvería el mismo token caducado y la petición seguiría fallando.
  * @returns Token listo para `Authorization: Bearer`.
  * @throws Error si no hay token estático y el dev-token no está permitido.
  * @throws ApiError si el endpoint de dev-token no responde 200.
  */
-async function getToken(): Promise<string> {
+async function getToken(forceRefresh = false): Promise<string> {
   const staticToken = process.env.BACKEND_API_TOKEN;
   if (staticToken) return staticToken;
 
@@ -100,13 +103,14 @@ async function getToken(): Promise<string> {
     );
   }
 
-  if (cachedDevToken && Date.now() < cachedDevToken.expiresAt) {
+  if (!forceRefresh && cachedDevToken && Date.now() < cachedDevToken.expiresAt) {
     return cachedDevToken.token;
   }
 
-  const res = await fetch(`${BASE_URL}/auth/dev-token`, {
-    next: { revalidate: DEV_TOKEN_REVALIDATE_SECONDS },
-  });
+  const res = await fetch(
+    `${BASE_URL}/auth/dev-token`,
+    forceRefresh ? { cache: 'no-store' } : { next: { revalidate: DEV_TOKEN_REVALIDATE_SECONDS } },
+  );
   if (!res.ok) {
     throw new ApiError(res.status, 'dev-token no disponible');
   }
@@ -168,11 +172,18 @@ export async function apiGet<T>(
     if (value !== undefined) url.searchParams.set(key, String(value));
   }
 
-  const token = await getToken();
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` },
-    next: { revalidate: cache.revalidate, tags: cache.tags },
-  });
+  const request = async (token: string) =>
+    fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+      next: { revalidate: cache.revalidate, tags: cache.tags },
+    });
+
+  let res = await request(await getToken());
+
+  if (res.status === 401) {
+    cachedDevToken = null;
+    res = await request(await getToken(true));
+  }
 
   if (!res.ok) {
     throw await toApiError(res);
