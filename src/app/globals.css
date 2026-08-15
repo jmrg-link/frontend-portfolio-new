@@ -110,7 +110,7 @@ body {
   display: flex;
   overflow-x: auto;
   overscroll-behavior-x: contain;
-  scroll-snap-type: x mandatory;
+  scroll-snap-type: x proximity;
   scrollbar-width: none;
   cursor: grab;
   &::-webkit-scrollbar {

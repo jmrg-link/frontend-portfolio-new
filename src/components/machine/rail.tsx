@@ -31,8 +31,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  */
 function useRailPosition(railRef: React.RefObject<HTMLDivElement | null>, count: number) {
   const [active, setActive] = useState(0);
-  const [atStart, setAtStart] = useState(true);
-  const [atEnd, setAtEnd] = useState(false);
 
   useEffect(() => {
     const rail = railRef.current;
@@ -48,13 +46,7 @@ function useRailPosition(railRef: React.RefObject<HTMLDivElement | null>, count:
           if (entry.isIntersecting) visibleNow.add(index);
           else visibleNow.delete(index);
         }
-        if (visibleNow.size > 0) {
-          const indexes = [...visibleNow];
-          const first = Math.min(...indexes);
-          setActive(first);
-          setAtStart(first === 0);
-          setAtEnd(Math.max(...indexes) === items.length - 1);
-        }
+        if (visibleNow.size > 0) setActive(Math.min(...visibleNow));
       },
       { root: rail, threshold: 0.6 },
     );
@@ -65,7 +57,51 @@ function useRailPosition(railRef: React.RefObject<HTMLDivElement | null>, count:
     return () => observer.disconnect();
   }, [railRef, count]);
 
-  return { active, atStart, atEnd };
+  return { active };
+}
+
+/** Holgura en píxeles para dar por alcanzado un extremo del recorrido. */
+const EDGE_TOLERANCE = 2;
+
+/**
+ * Extremos del recorrido, leídos de la posición real del scroll.
+ *
+ * La visibilidad de los items no sirve para esto: el último puede verse entero y quedar aún
+ * recorrido por delante, de modo que el riel daría la vuelta dejando contenido sin mostrar.
+ *
+ * @param railRef - Referencia al elemento que scrollea.
+ * @returns Si el recorrido está agotado por cada lado, y el lector que lo actualiza.
+ */
+function useRailEdges(railRef: React.RefObject<HTMLDivElement | null>, count: number) {
+  const [edges, setEdges] = useState({ atStart: true, atEnd: false });
+  const frame = useRef(0);
+
+  const readEdges = useCallback(() => {
+    cancelAnimationFrame(frame.current);
+    frame.current = requestAnimationFrame(() => {
+      const rail = railRef.current;
+      if (!rail) return;
+      const max = rail.scrollWidth - rail.clientWidth;
+      setEdges({
+        atStart: rail.scrollLeft <= EDGE_TOLERANCE,
+        atEnd: max <= 0 || rail.scrollLeft >= max - EDGE_TOLERANCE,
+      });
+    });
+  }, [railRef]);
+
+  useEffect(() => {
+    readEdges();
+    const rail = railRef.current;
+    if (!rail) return;
+    const observer = new ResizeObserver(readEdges);
+    observer.observe(rail);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame.current);
+    };
+  }, [readEdges, railRef, count]);
+
+  return { ...edges, readEdges };
 }
 
 /**
@@ -78,31 +114,54 @@ function useRailPosition(railRef: React.RefObject<HTMLDivElement | null>, count:
  * @returns Manejadores de puntero y si hay un arrastre en curso.
  */
 function useDragScroll(railRef: React.RefObject<HTMLDivElement | null>) {
-  const drag = useRef<{ startX: number; startLeft: number } | null>(null);
+  const drag = useRef<{ pointerId: number; startX: number; startLeft: number } | null>(null);
   const [dragging, setDragging] = useState(false);
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (event.pointerType !== 'mouse') return;
+    if (event.pointerType !== 'mouse' || event.button !== 0) return;
     const rail = railRef.current;
-    if (!rail) return;
-    drag.current = { startX: event.clientX, startLeft: rail.scrollLeft };
+    if (!rail || rail.scrollWidth <= rail.clientWidth) return;
+    drag.current = { pointerId: event.pointerId, startX: event.clientX, startLeft: rail.scrollLeft };
   };
 
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     const rail = railRef.current;
     if (!drag.current || !rail) return;
     const delta = event.clientX - drag.current.startX;
-    if (Math.abs(delta) < 3) return;
-    if (!dragging) setDragging(true);
-    rail.style.scrollSnapType = 'none';
+    if (!dragging) {
+      if (Math.abs(delta) < 3) return;
+      setDragging(true);
+      rail.style.scrollSnapType = 'none';
+      try {
+        event.currentTarget.setPointerCapture(drag.current.pointerId);
+      } catch {
+        // El puntero puede haberse liberado ya; el arrastre sigue siendo válido sin captura.
+      }
+    }
+    event.preventDefault();
     rail.scrollLeft = drag.current.startLeft - delta;
   };
 
-  const endDrag = () => {
+  const endDrag = (event: React.PointerEvent<HTMLDivElement>) => {
     const rail = railRef.current;
-    if (rail) rail.style.scrollSnapType = '';
+    const current = drag.current;
     drag.current = null;
+    if (!dragging) return;
     setDragging(false);
+    try {
+      if (current && event.currentTarget.hasPointerCapture(current.pointerId)) {
+        event.currentTarget.releasePointerCapture(current.pointerId);
+      }
+    } catch {
+      // Sin captura activa no hay nada que liberar.
+    }
+    if (rail) rail.style.scrollSnapType = '';
+  };
+
+  const onClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!dragging) return;
+    event.preventDefault();
+    event.stopPropagation();
   };
 
   return {
@@ -111,7 +170,8 @@ function useDragScroll(railRef: React.RefObject<HTMLDivElement | null>) {
       onPointerDown,
       onPointerMove,
       onPointerUp: endDrag,
-      onPointerLeave: endDrag,
+      onPointerCancel: endDrag,
+      onClickCapture,
     },
   };
 }
@@ -167,24 +227,46 @@ export function Rail({
   className = '',
 }: RailProps) {
   const railRef = useRef<HTMLDivElement>(null);
-  const { active, atStart, atEnd } = useRailPosition(railRef, count);
+  const { active } = useRailPosition(railRef, count);
+  const { atStart, atEnd, readEdges } = useRailEdges(railRef, count);
   const { dragging, handlers } = useDragScroll(railRef);
   const { progress, onScroll } = useRailProgress(railRef);
 
   const scrollToItem = useCallback((index: number) => {
     const rail = railRef.current;
     const item = rail?.children[index] as HTMLElement | undefined;
-    item?.scrollIntoView({ inline: 'start', block: 'nearest' });
+    if (!rail || !item) return;
+    const max = rail.scrollWidth - rail.clientWidth;
+    rail.scrollTo({ left: Math.min(item.offsetLeft, max), behavior: 'smooth' });
   }, []);
 
+  /**
+   * Avanza al primer item que aún no está alineado con el borde de entrada, sin pasar del
+   * recorrido disponible. Al agotarlo, la bandeja vuelve al otro extremo.
+   */
   const step = useCallback(
     (direction: 1 | -1) => {
+      const rail = railRef.current;
+      if (!rail) return;
       if (direction === 1 && atEnd) return scrollToItem(0);
       if (direction === -1 && atStart) return scrollToItem(count - 1);
-      scrollToItem(Math.min(count - 1, Math.max(0, active + direction)));
+
+      const items = Array.from(rail.children) as HTMLElement[];
+      const target =
+        direction === 1
+          ? items.find((item) => item.offsetLeft > rail.scrollLeft + EDGE_TOLERANCE)
+          : [...items].reverse().find((item) => item.offsetLeft < rail.scrollLeft - EDGE_TOLERANCE);
+      const max = rail.scrollWidth - rail.clientWidth;
+      const left = target ? Math.min(target.offsetLeft, max) : direction === 1 ? max : 0;
+      rail.scrollTo({ left, behavior: 'smooth' });
     },
-    [active, atStart, atEnd, count, scrollToItem],
+    [atStart, atEnd, count, scrollToItem],
   );
+
+  const handleScroll = useCallback(() => {
+    readEdges();
+    if (readout === 'channel') onScroll();
+  }, [readEdges, onScroll, readout]);
 
   const groupProps = itemsFocusable ? {} : { tabIndex: 0, role: 'group', 'aria-label': label };
 
@@ -196,7 +278,7 @@ export function Rail({
         ref={railRef}
         {...groupProps}
         {...handlers}
-        onScroll={readout === 'channel' ? onScroll : undefined}
+        onScroll={handleScroll}
         data-dragging={dragging ? 'true' : undefined}
         className={`rail ${className}`}
       >
