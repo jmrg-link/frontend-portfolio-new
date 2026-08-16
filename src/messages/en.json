@@ -17,13 +17,14 @@
     "closeMenu": "Close menu"
   },
   "machine": {
-    "statusOnline": "IN SERVICE",
-    "sectionIndex": "PANEL INDEX",
+    "articleBreadcrumb": "Article path",
+    "articleIndex": "Contents",
     "contactAction": "LET'S TALK",
+    "logPosition": "Log position",
     "pause": "Pause the display scrolling",
     "play": "Resume the display scrolling",
-    "articleIndex": "Contents",
-    "logPosition": "Log position"
+    "sectionIndex": "PANEL INDEX",
+    "statusOnline": "IN SERVICE"
   },
   "rail": {
     "previous": "Move back in the tray",
@@ -80,9 +81,10 @@
     "awaitingVerification": "Complete the verification to send"
   },
   "pager": {
-    "previous": "Previous",
+    "loading": "Loading…",
     "next": "Next",
     "position": "Page",
-    "loading": "Loading…"
+    "previous": "Previous",
+    "revealed": "{shown} of {total}"
   }
 }

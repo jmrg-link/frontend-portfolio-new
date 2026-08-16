@@ -1,0 +1,48 @@
+name: verify
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Lo que se puede comprobar sin backend ni navegadores. Falla el push; no avisa.
+  estatico:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Habilitar pnpm
+        run: corepack enable
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Formato y lints de Biome
+        run: pnpm exec biome ci .
+
+      - name: Tipos
+        run: pnpm typecheck
+
+      - name: ESLint
+        run: pnpm lint
+
+  # `build`, `verify:no-secrets` y la suite de Playwright NO corren aquí.
+  #
+  # El prerender lee la API REST del backend en el arranque y las lecturas de la
+  # home no toleran fallo, de modo que sin MongoDB y sin el backend levantados el
+  # build aborta. Cubrirlo exige orquestar el repo hermano dentro de este
+  # workflow, que es una decisión de infraestructura pendiente.
+  #
+  # Mientras tanto, la puerta completa es local: `pnpm verify`.

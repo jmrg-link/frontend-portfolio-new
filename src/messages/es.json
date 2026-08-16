@@ -17,13 +17,14 @@
     "closeMenu": "Cerrar el menú"
   },
   "machine": {
-    "statusOnline": "EN SERVICIO",
-    "sectionIndex": "ÍNDICE DE PANEL",
+    "articleBreadcrumb": "Ruta del artículo",
+    "articleIndex": "Índice",
     "contactAction": "HABLEMOS",
+    "logPosition": "Posición del registro",
     "pause": "Pausar el desplazamiento del display",
     "play": "Reanudar el desplazamiento del display",
-    "articleIndex": "Índice",
-    "logPosition": "Posición del registro"
+    "sectionIndex": "ÍNDICE DE PANEL",
+    "statusOnline": "EN SERVICIO"
   },
   "rail": {
     "previous": "Retroceder en la bandeja",
@@ -80,9 +81,10 @@
     "awaitingVerification": "Completa la verificación para enviar"
   },
   "pager": {
-    "previous": "Anterior",
+    "loading": "Cargando…",
     "next": "Siguiente",
     "position": "Página",
-    "loading": "Cargando…"
+    "previous": "Anterior",
+    "revealed": "{shown} de {total}"
   }
 }

@@ -53,12 +53,27 @@ type Travel = { progress: number; atStart: boolean; atEnd: boolean };
 
 const START: Travel = { progress: 0, atStart: true, atEnd: false };
 
+/**
+ * Rellena la plantilla del anuncio con la cuenta actual.
+ *
+ * Llega como texto y no como función porque un componente de servidor no puede pasar funciones a
+ * uno de cliente, y traer el traductor hasta aquí arrastraría los mensajes al bundle.
+ *
+ * @param plantilla - Texto traducido con los marcadores `{shown}` y `{total}`.
+ */
+function formatRevealed(plantilla: string, shown: number, total: number): string {
+  return plantilla.replace('{shown}', String(shown)).replace('{total}', String(total));
+}
+
 export function EndlessLog({
   children,
   positionLabel,
+  revealedLabel,
 }: {
   children: ReactNode;
   positionLabel: string;
+  /** Plantilla con los marcadores `{shown}` y `{total}`, ya traducida. */
+  revealedLabel: string;
 }) {
   const rows = Children.toArray(children);
   const hydrated = useHydrated();
@@ -144,6 +159,10 @@ export function EndlessLog({
           />
         </div>
       ) : null}
+
+      <p aria-live="polite" className="sr-only">
+        {hydrated && shown < rows.length ? formatRevealed(revealedLabel, shown, rows.length) : ''}
+      </p>
     </div>
   );
 }

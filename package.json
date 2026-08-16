@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@11.18.0",
   "scripts": {
-    "dev": "API_AUTH_DEV_TOKEN=true NODE_EXTRA_CA_CERTS=../backend-portfolio-new/certs/localhost.pem next dev",
+    "dev": "SITE_URL=http://localhost:3000 API_AUTH_DEV_TOKEN=true NODE_EXTRA_CA_CERTS=../backend-portfolio-new/certs/localhost.pem next dev",
     "build": "API_AUTH_DEV_TOKEN=true NODE_EXTRA_CA_CERTS=../backend-portfolio-new/certs/localhost.pem next build",
     "start": "API_AUTH_DEV_TOKEN=true NODE_EXTRA_CA_CERTS=../backend-portfolio-new/certs/localhost.pem next start",
     "start:standalone": "cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/ && API_AUTH_DEV_TOKEN=true NODE_EXTRA_CA_CERTS=\"$PWD/../backend-portfolio-new/certs/localhost.pem\" node .next/standalone/server.js",

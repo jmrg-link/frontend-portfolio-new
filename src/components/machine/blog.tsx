@@ -27,19 +27,21 @@ export function BlogFeed({
   title,
   allLabel,
   positionLabel,
+  revealedLabel,
 }: {
   posts: BlogPost[];
   locale: Locale;
   title: string;
   allLabel: string;
   positionLabel: string;
+  revealedLabel: string;
 }) {
   if (posts.length === 0) return null;
 
   return (
     <PanelSection id="blog" title={title} tone="deep" sideLabel="REGISTRO DEL DISPLAY">
       <VfdGlass>
-        <EndlessLog positionLabel={positionLabel}>
+        <EndlessLog positionLabel={positionLabel} revealedLabel={revealedLabel}>
           {posts.map((post, index) => (
             <li key={post._id ?? post.slug}>
               <Link
