@@ -8,18 +8,107 @@ import { notFound } from 'next/navigation';
 import { hasLocale } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { routing } from '@/i18n/routing';
+import { getPathname } from '@/i18n/navigation';
+import {
+  OG_LOCALE,
+  absoluteImage,
+  absoluteUrl,
+  buildAlternates,
+  buildTwitter,
+  localesWithSlug,
+} from '@/lib/seo';
+import { JsonLd } from '@/components/machine/json-ld';
+import type { BlogPost } from '@/lib/api/queries';
 import { Link } from '@/i18n/navigation';
 import { ApiError } from '@/lib/api/client';
 import { renderMarkdown } from '@/lib/markdown';
-import { getPost, getSiteSettings, type Locale } from '@/lib/api/queries';
+import { type Locale, getPost, getPosts, getSiteSettings } from '@/lib/api/queries';
 import { MachineHeader } from '@/components/machine/header';
 import { MakerPlate } from '@/components/machine/footer';
 import { MermaidRunner } from '@/components/machine/mermaid-runner';
 import { ArticleBar } from '@/components/machine/article-bar';
-import { resolveImageUrl } from '@/lib/images';
 import { CmsImage } from '@/components/machine/cms-image';
 
 export const revalidate = 600;
+
+/**
+ * Slugs que se prerenderizan en el build.
+ *
+ * Sin esta lista el `revalidate` de arriba es inerte: la ruta no entra en la caché completa y cada
+ * visita vuelve a convertir el markdown y a resaltar el código. El locale lo aporta el layout, así
+ * que aquí basta el slug; los idiomas no son simétricos, de modo que se piden los de ambos y se
+ * deduplica.
+ */
+export async function generateStaticParams() {
+  const porLocale = await Promise.all(routing.locales.map((locale) => getPosts(locale)));
+  const slugs = new Set(porLocale.flat().map((post) => post.slug));
+  return [...slugs].map((slug) => ({ slug }));
+}
+
+/** Ruta interna del artículo, tal como la esperan `buildAlternates` y `getPathname`. */
+function postHref(slug: string) {
+  return { pathname: '/blog/[slug]' as const, params: { slug } };
+}
+
+/** URL absoluta del artículo en el locale pedido, por su pathname localizado. */
+function postUrl(locale: Locale, slug: string): string {
+  return absoluteUrl(getPathname({ locale, href: postHref(slug) }));
+}
+
+/**
+ * Grafo schema.org del artículo: el `BlogPosting` con sus fechas y su autoría,
+ * más la miga de pan que lo sitúa bajo el listado. Sin `updatedAt` la fecha de
+ * modificación cae en la de publicación, que es lo que el CMS garantiza.
+ */
+function postGraph(params: {
+  locale: Locale;
+  post: BlogPost;
+  image: string | null;
+  author: string | null;
+  homeLabel: string;
+  blogLabel: string;
+}): Record<string, unknown> {
+  const { locale, post } = params;
+  const url = postUrl(locale, post.slug);
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'BlogPosting',
+        '@id': `${url}#post`,
+        url,
+        mainEntityOfPage: url,
+        headline: post.title,
+        description: post.description,
+        datePublished: post.date,
+        dateModified: post.updatedAt ?? post.date,
+        inLanguage: locale,
+        ...(params.image ? { image: [params.image] } : {}),
+        ...(post.tags.length ? { keywords: post.tags.join(', ') } : {}),
+        ...(params.author ? { author: { '@type': 'Person', name: params.author } } : {}),
+      },
+      {
+        '@type': 'BreadcrumbList',
+        '@id': `${url}#breadcrumb`,
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: params.homeLabel,
+            item: absoluteUrl(getPathname({ locale, href: '/' })),
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: params.blogLabel,
+            item: absoluteUrl(getPathname({ locale, href: '/blog' })),
+          },
+          { '@type': 'ListItem', position: 3, name: post.title, item: url },
+        ],
+      },
+    ],
+  };
+}
 
 export async function generateMetadata({
   params,
@@ -30,17 +119,24 @@ export async function generateMetadata({
   if (!hasLocale(routing.locales, locale)) return {};
   const post = await getPost(slug, locale as Locale).catch(() => null);
   if (!post) return {};
-  const ogImage = resolveImageUrl(post.image);
+  const ogImage = absoluteImage(post.image);
   return {
     title: post.title,
     description: post.description,
+    alternates: buildAlternates(locale, postHref(slug), await localesWithSlug(slug, getPosts)),
     openGraph: {
       type: 'article',
       title: post.title,
       description: post.description,
+      url: postUrl(locale, slug),
+      locale: OG_LOCALE[locale],
       publishedTime: post.date,
+      modifiedTime: post.updatedAt ?? post.date,
+      authors: post.author ? [post.author] : undefined,
+      tags: post.tags,
       images: ogImage ? [ogImage] : undefined,
     },
+    twitter: buildTwitter(post.title, post.description, ogImage),
   };
 }
 
@@ -70,8 +166,18 @@ export default async function PostPage({
     day: 'numeric',
   }).format(new Date(post.date));
 
+  const graph = postGraph({
+    locale,
+    post,
+    image: absoluteImage(post.image),
+    author: post.author || settings?.author || null,
+    homeLabel: t('nav.home'),
+    blogLabel: t('nav.blog'),
+  });
+
   return (
     <>
+      <JsonLd data={graph} />
       <MachineHeader section="blog" />
       <ArticleBar
         headings={headings}
@@ -80,6 +186,7 @@ export default async function PostPage({
         homeLabel={t('nav.home')}
         title={post.title}
         indexLabel={t('machine.articleIndex')}
+        breadcrumbLabel={t('machine.articleBreadcrumb')}
       />
       <main id="main-content" className="flex-1 bg-panel">
         <article className="mx-auto max-w-3xl px-5 pt-20 pb-24 md:px-8 md:pt-28">
