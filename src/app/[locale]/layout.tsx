@@ -12,6 +12,7 @@ import { Archivo, Chivo_Mono, Doto } from 'next/font/google';
 import { routing } from '@/i18n/routing';
 import { getSiteSettings, type Locale } from '@/lib/api/queries';
 import { WebVitalsReporter } from '@/components/web-vitals-reporter';
+import { InlineScript } from '@/components/machine/inline-script';
 import '../globals.css';
 
 const archivo = Archivo({
@@ -92,8 +93,7 @@ export default async function LocaleLayout({
       className={`${archivo.variable} ${chivoMono.variable} ${doto.variable}`}
     >
       <head>
-        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: script anti-flash estático y propio, justificado en su JSDoc */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+        <InlineScript html={THEME_BOOT_SCRIPT} />
       </head>
       <body className="flex min-h-dvh flex-col bg-panel text-silk antialiased">
         <WebVitalsReporter />

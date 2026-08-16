@@ -22,8 +22,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
- * Índice del primer item visible dentro del riel, observado sin escuchar el
- * evento de scroll: `IntersectionObserver` solo despierta al cruzar el umbral.
+ * Índice del item de referencia del riel, observado sin escuchar el evento de
+ * scroll: `IntersectionObserver` solo despierta al cruzar el umbral.
+ *
+ * Es el primero visible salvo al final del recorrido, donde el scroll ya no puede
+ * avanzar y varios items quedan a la vista a la vez: allí manda el último, o su
+ * indicador no se encendería nunca.
  *
  * @param railRef - Referencia al elemento que scrollea.
  * @param count - Número de items del riel.
@@ -46,7 +50,9 @@ function useRailPosition(railRef: React.RefObject<HTMLDivElement | null>, count:
           if (entry.isIntersecting) visibleNow.add(index);
           else visibleNow.delete(index);
         }
-        if (visibleNow.size > 0) setActive(Math.min(...visibleNow));
+        if (visibleNow.size === 0) return;
+        const agotado = rail.scrollLeft >= rail.scrollWidth - rail.clientWidth - EDGE_TOLERANCE;
+        setActive(agotado ? Math.max(...visibleNow) : Math.min(...visibleNow));
       },
       { root: rail, threshold: 0.6 },
     );
@@ -58,6 +64,11 @@ function useRailPosition(railRef: React.RefObject<HTMLDivElement | null>, count:
   }, [railRef, count]);
 
   return { active };
+}
+
+/** Preferencia de movimiento reducido, leída en el momento del gesto y no al montar. */
+function prefersReducedMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 /** Holgura en píxeles para dar por alcanzado un extremo del recorrido. */
@@ -89,6 +100,7 @@ function useRailEdges(railRef: React.RefObject<HTMLDivElement | null>, count: nu
     });
   }, [railRef]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `count` no se lee dentro del efecto pero dispara el recálculo al cambiar el número de piezas; el observador solo reacciona al tamaño del riel, que no varía al añadirlas
   useEffect(() => {
     readEdges();
     const rail = railRef.current;
@@ -121,7 +133,11 @@ function useDragScroll(railRef: React.RefObject<HTMLDivElement | null>) {
     if (event.pointerType !== 'mouse' || event.button !== 0) return;
     const rail = railRef.current;
     if (!rail || rail.scrollWidth <= rail.clientWidth) return;
-    drag.current = { pointerId: event.pointerId, startX: event.clientX, startLeft: rail.scrollLeft };
+    drag.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startLeft: rail.scrollLeft,
+    };
   };
 
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -231,36 +247,50 @@ export function Rail({
   const { atStart, atEnd, readEdges } = useRailEdges(railRef, count);
   const { dragging, handlers } = useDragScroll(railRef);
   const { progress, onScroll } = useRailProgress(railRef);
+  const pendingRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const rail = railRef.current;
+    if (!rail) return;
+    const release = () => {
+      pendingRef.current = null;
+    };
+    rail.addEventListener('scrollend', release);
+    rail.addEventListener('pointerdown', release);
+    return () => {
+      rail.removeEventListener('scrollend', release);
+      rail.removeEventListener('pointerdown', release);
+    };
+  }, []);
 
   const scrollToItem = useCallback((index: number) => {
     const rail = railRef.current;
     const item = rail?.children[index] as HTMLElement | undefined;
     if (!rail || !item) return;
     const max = rail.scrollWidth - rail.clientWidth;
-    rail.scrollTo({ left: Math.min(item.offsetLeft, max), behavior: 'smooth' });
+    rail.scrollTo({
+      left: Math.min(item.offsetLeft, max),
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+    });
   }, []);
 
   /**
-   * Avanza al primer item que aún no está alineado con el borde de entrada, sin pasar del
-   * recorrido disponible. Al agotarlo, la bandeja vuelve al otro extremo.
+   * Avanza o retrocede exactamente una posición y da la vuelta al agotar el recorrido.
+   *
+   * El destino sale de un índice propio y no de `scrollLeft`, que durante un desplazamiento suave
+   * todavía va por el tramo anterior: leerlo hacía que dos pulsaciones seguidas resolvieran al
+   * mismo item y la bandeja se quedara quieta. El índice se vuelve a enganchar a lo que se ve en
+   * cuanto el desplazamiento termina o el visitante arrastra.
    */
   const step = useCallback(
     (direction: 1 | -1) => {
-      const rail = railRef.current;
-      if (!rail) return;
-      if (direction === 1 && atEnd) return scrollToItem(0);
-      if (direction === -1 && atStart) return scrollToItem(count - 1);
-
-      const items = Array.from(rail.children) as HTMLElement[];
-      const target =
-        direction === 1
-          ? items.find((item) => item.offsetLeft > rail.scrollLeft + EDGE_TOLERANCE)
-          : [...items].reverse().find((item) => item.offsetLeft < rail.scrollLeft - EDGE_TOLERANCE);
-      const max = rail.scrollWidth - rail.clientWidth;
-      const left = target ? Math.min(target.offsetLeft, max) : direction === 1 ? max : 0;
-      rail.scrollTo({ left, behavior: 'smooth' });
+      if (count === 0) return;
+      const base = pendingRef.current ?? active;
+      const next = (base + direction + count) % count;
+      pendingRef.current = next;
+      scrollToItem(next);
     },
-    [atStart, atEnd, count, scrollToItem],
+    [active, count, scrollToItem],
   );
 
   const handleScroll = useCallback(() => {
@@ -270,7 +300,12 @@ export function Rail({
 
   const groupProps = itemsFocusable ? {} : { tabIndex: 0, role: 'group', 'aria-label': label };
 
-  const hasControls = Boolean(controls) && count > 1;
+  /**
+   * Los controles solo existen si hay recorrido que hacer. Con los dos extremos
+   * alcanzados a la vez la bandeja cabe entera en su caja, y unas flechas que no
+   * mueven nada prometen algo que no ocurre.
+   */
+  const hasControls = Boolean(controls) && count > 1 && !(atStart && atEnd);
 
   return (
     <div className="group/rail relative">
