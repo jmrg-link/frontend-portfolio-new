@@ -15,7 +15,19 @@ import { Marked, type Token, type Tokens } from 'marked';
 import { createSlugger } from './adapters/slug';
 import { codeToHtml } from 'shiki';
 
-const THEMES = { light: 'github-light', dark: 'github-dark-default' } as const;
+const THEMES = { light: 'github-light-high-contrast', dark: 'github-dark-default' } as const;
+
+/**
+ * Correcciones de color sobre el tema claro.
+ *
+ * Los temas de Shiki se calibran contra blanco puro y el bloque de código de
+ * este panel es `--color-panel-deep` (#eef2f7), más oscuro. El gris de
+ * comentario del tema queda en 4,48:1 sobre ese fondo, por debajo del 4,5:1 de
+ * WCAG 1.4.3; el sustituto da 4,75:1. Es el único token del tema que no llega.
+ */
+const COLOR_REPLACEMENTS = {
+  'github-light-high-contrast': { '#66707b': '#626c77' },
+} as const;
 
 /** Encabezado de segundo nivel del artículo, con el ancla que lo alcanza. */
 export type Heading = { id: string; text: string };
@@ -75,9 +87,15 @@ async function highlight(code: string, lang: string): Promise<string> {
       lang: resolved,
       themes: THEMES,
       defaultColor: false,
+      colorReplacements: COLOR_REPLACEMENTS,
     });
   } catch {
-    return await codeToHtml(code, { lang: 'text', themes: THEMES, defaultColor: false });
+    return await codeToHtml(code, {
+      lang: 'text',
+      themes: THEMES,
+      defaultColor: false,
+      colorReplacements: COLOR_REPLACEMENTS,
+    });
   }
 }
 

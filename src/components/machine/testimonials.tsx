@@ -35,7 +35,7 @@ export function Receipts({
         {testimonials.map((item) => (
           <figure
             key={item._id ?? item.author}
-            className="w-[85vw] border-t-4 border-dashed border-panel/20 bg-ticket px-7 py-8 text-ticket-ink shadow-[var(--shadow-drop)] sm:w-[24rem]"
+            className="w-[85vw] border-t-4 border-dashed border-ticket-ink/25 bg-ticket px-7 py-8 text-ticket-ink shadow-[var(--shadow-drop)] sm:w-[24rem]"
           >
             <div className="flex size-9 items-center justify-center rounded-full border border-ticket-ink/25 font-spec text-xs font-bold tracking-wider">
               {item.initials}

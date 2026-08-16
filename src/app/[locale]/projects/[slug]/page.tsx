@@ -7,20 +7,93 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { hasLocale } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { marked } from 'marked';
 
-import { wrapTables } from '@/lib/markdown';
+import { renderMarkdown } from '@/lib/markdown';
 import { routing } from '@/i18n/routing';
-import { Link } from '@/i18n/navigation';
+import { Link, getPathname } from '@/i18n/navigation';
 import { ApiError } from '@/lib/api/client';
-import { getProject, getSiteSettings, type Locale } from '@/lib/api/queries';
+import {
+  type Locale,
+  type Project,
+  getProject,
+  getProjects,
+  getSiteSettings,
+} from '@/lib/api/queries';
+import { absoluteUrl, buildAlternates, buildTwitter, localesWithSlug } from '@/lib/seo';
 import { Led } from '@/components/machine/primitives';
+import { JsonLd } from '@/components/machine/json-ld';
 import { MachineHeader } from '@/components/machine/header';
 import { MakerPlate } from '@/components/machine/footer';
 import { resolveImageUrl } from '@/lib/images';
 import { CmsImage } from '@/components/machine/cms-image';
+import { MermaidRunner } from '@/components/machine/mermaid-runner';
 
 export const revalidate = 600;
+
+/**
+ * Slugs que se prerenderizan en el build.
+ *
+ * Sin esta lista el `revalidate` de arriba es inerte: la ruta no entra en la caché completa y cada
+ * visita reconstruye la ficha entera. El locale lo aporta el layout, así que aquí basta el slug;
+ * los idiomas no son simétricos, de modo que se piden los de ambos y se deduplica.
+ */
+export async function generateStaticParams() {
+  const porLocale = await Promise.all(routing.locales.map((locale) => getProjects(locale)));
+  const slugs = new Set(porLocale.flat().map((project) => project.slug));
+  return [...slugs].map((slug) => ({ slug }));
+}
+
+/**
+ * Grafo schema.org de la ficha. El proyecto se describe como
+ * `SoftwareSourceCode` porque sus campos reales son los de esa clase —
+ * `tech` es `programmingLanguage` y `github` es `codeRepository`—, y la miga de
+ * pan lo sitúa bajo el listado.
+ *
+ * @param project - Proyecto del locale, con `content` ya cargado.
+ * @param locale - Locale de la página, que fija las URL canónicas del grafo.
+ * @param labels - Textos traducidos de la home y de la sección para la miga de pan.
+ * @param author - Autor declarado en `SiteSettings`; se omite si falta el singleton.
+ * @returns Grafo listo para serializar en un `application/ld+json`.
+ */
+function buildProjectGraph(
+  project: Project,
+  locale: Locale,
+  labels: { home: string; section: string },
+  author?: string,
+) {
+  const homeUrl = absoluteUrl(getPathname({ locale, href: '/' }));
+  const listUrl = absoluteUrl(getPathname({ locale, href: '/projects' }));
+  const url = absoluteUrl(
+    getPathname({ locale, href: { pathname: '/projects/[slug]', params: { slug: project.slug } } }),
+  );
+  const image = resolveImageUrl(project.image);
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'SoftwareSourceCode',
+        '@id': url,
+        name: project.title,
+        description: project.description,
+        url,
+        inLanguage: locale,
+        datePublished: project.date,
+        programmingLanguage: project.tech,
+        ...(image ? { image } : {}),
+        ...(project.github ? { codeRepository: project.github } : {}),
+        ...(author ? { author: { '@type': 'Person', name: author } } : {}),
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: labels.home, item: homeUrl },
+          { '@type': 'ListItem', position: 2, name: labels.section, item: listUrl },
+          { '@type': 'ListItem', position: 3, name: project.title, item: url },
+        ],
+      },
+    ],
+  };
+}
 
 export async function generateMetadata({
   params,
@@ -29,17 +102,23 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale, slug } = await params;
   if (!hasLocale(routing.locales, locale)) return {};
-  const project = await getProject(slug, locale as Locale).catch(() => null);
+  const project = await getProject(slug, locale).catch(() => null);
   if (!project) return {};
   const ogImage = resolveImageUrl(project.image);
   return {
     title: project.title,
     description: project.description,
+    alternates: buildAlternates(
+      locale,
+      { pathname: '/projects/[slug]', params: { slug } },
+      await localesWithSlug(slug, getProjects),
+    ),
     openGraph: {
       title: project.title,
       description: project.description,
       images: ogImage ? [ogImage] : undefined,
     },
+    twitter: buildTwitter(project.title, project.description, ogImage),
   };
 }
 
@@ -60,7 +139,8 @@ export default async function ProjectPage({
   if (!project) notFound();
 
   const [settings, t] = await Promise.all([getSiteSettings(locale), getTranslations()]);
-  const html = project.content ? wrapTables(await marked.parse(project.content)) : '';
+  const { html } = await renderMarkdown(project.content ?? '');
+  const hasDiagrams = html.includes('mermaid-figure');
   const statusLabel =
     project.status === 'completed'
       ? t('status.completed')
@@ -70,6 +150,14 @@ export default async function ProjectPage({
 
   return (
     <>
+      <JsonLd
+        data={buildProjectGraph(
+          project,
+          locale,
+          { home: t('nav.home'), section: t('sections.work.title') },
+          settings?.author,
+        )}
+      />
       <MachineHeader section="work" />
       <main id="main-content" className="flex-1 bg-panel">
         <article className="mx-auto max-w-4xl px-5 pt-20 pb-24 md:px-8 md:pt-28">
@@ -132,6 +220,7 @@ export default async function ProjectPage({
             sizes="(min-width: 768px) 56rem, 100vw"
             preload
             className="mt-12 max-h-[70vh] w-full rounded-sm border border-groove bg-panel object-contain p-4"
+            fallback={null}
           />
 
           {html ? (
@@ -141,6 +230,7 @@ export default async function ProjectPage({
               dangerouslySetInnerHTML={{ __html: html }}
             />
           ) : null}
+          {hasDiagrams ? <MermaidRunner /> : null}
         </article>
       </main>
       <MakerPlate settings={settings} />

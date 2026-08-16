@@ -13,7 +13,7 @@
  * apartados, la barra se queda solo con el rastro en vez de mostrar un botón
  * que no lleva a ninguna parte.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import type { Heading } from '@/lib/markdown';
 
@@ -56,6 +56,7 @@ export function ArticleBar({
   homeLabel,
   title,
   indexLabel,
+  breadcrumbLabel,
 }: {
   headings: Heading[];
   surfaceHref: '/blog' | '/projects';
@@ -63,18 +64,25 @@ export function ArticleBar({
   homeLabel: string;
   title: string;
   indexLabel: string;
+  breadcrumbLabel: string;
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const close = useCallback((restoreFocus: boolean) => {
+    setOpen(false);
+    if (restoreFocus) triggerRef.current?.focus();
+  }, []);
   const current = useReadingSection(headings.map((heading) => heading.id).join(','));
 
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') close(true);
     };
     const onPointerDown = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+      if (!rootRef.current?.contains(event.target as Node)) close(false);
     };
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('pointerdown', onPointerDown);
@@ -82,7 +90,7 @@ export function ArticleBar({
       document.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('pointerdown', onPointerDown);
     };
-  }, [open]);
+  }, [open, close]);
 
   return (
     <div
@@ -90,7 +98,7 @@ export function ArticleBar({
       className="relative border-b border-groove bg-panel-deep/80 backdrop-blur-sm"
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-2.5 md:px-8">
-        <nav aria-label={indexLabel} className="flex min-w-0 items-center gap-2">
+        <nav aria-label={breadcrumbLabel} className="flex min-w-0 items-center gap-2">
           <Link href="/" className="plate-label shrink-0 transition-colors hover:text-led-ink">
             {homeLabel}
           </Link>
@@ -111,6 +119,7 @@ export function ArticleBar({
 
         {headings.length > 0 ? (
           <button
+            ref={triggerRef}
             type="button"
             onClick={() => setOpen((value) => !value)}
             aria-expanded={open}
