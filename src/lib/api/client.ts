@@ -47,19 +47,25 @@ const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
 /**
  * Error de la API con el problem-details RFC 9457 del backend ya parseado.
  * Conserva `status` como dato para que las páginas mapeen 404 → `notFound()`
- * y 5xx → error boundary en vez de inspeccionar strings.
+ * y 5xx → error boundary en vez de inspeccionar strings, y `resource` —la ruta
+ * relativa con su query, nunca la base URL— para que el mensaje diga qué
+ * petición falló: un fallo durante el prerender solo deja el nombre de la
+ * página, y una página lee varios recursos.
  */
 export class ApiError extends Error {
   readonly status: number;
   readonly title: string;
   readonly detail?: string;
+  readonly resource?: string;
 
-  constructor(status: number, title: string, detail?: string) {
-    super(detail ? `${status} ${title}: ${detail}` : `${status} ${title}`);
+  constructor(status: number, title: string, detail?: string, resource?: string) {
+    const causa = detail ? `${status} ${title}: ${detail}` : `${status} ${title}`;
+    super(resource ? `GET ${resource} → ${causa}` : causa);
     this.name = 'ApiError';
     this.status = status;
     this.title = title;
     this.detail = detail;
+    this.resource = resource;
   }
 }
 
@@ -112,7 +118,7 @@ async function getToken(forceRefresh = false): Promise<string> {
     forceRefresh ? { cache: 'no-store' } : { next: { revalidate: DEV_TOKEN_REVALIDATE_SECONDS } },
   );
   if (!res.ok) {
-    throw new ApiError(res.status, 'dev-token no disponible');
+    throw new ApiError(res.status, 'dev-token no disponible', undefined, '/auth/dev-token');
   }
   const body = (await res.json()) as DevTokenResponse;
   cachedDevToken = {
@@ -136,9 +142,10 @@ export type CachePolicy = {
  * `application/problem+json` del backend cuando viene.
  *
  * @param res - Respuesta fallida del backend.
+ * @param resource - Ruta relativa con query de la petición que falló.
  * @returns El `ApiError` listo para lanzar.
  */
-async function toApiError(res: Response): Promise<ApiError> {
+async function toApiError(res: Response, resource: string): Promise<ApiError> {
   const contentType = res.headers.get('content-type') ?? '';
   if (contentType.includes('application/problem+json')) {
     const problem = (await res.json().catch(() => null)) as {
@@ -146,11 +153,11 @@ async function toApiError(res: Response): Promise<ApiError> {
       detail?: string;
     } | null;
     if (problem) {
-      return new ApiError(res.status, problem.title ?? res.statusText, problem.detail);
+      return new ApiError(res.status, problem.title ?? res.statusText, problem.detail, resource);
     }
   }
   const text = await res.text().catch(() => '');
-  return new ApiError(res.status, res.statusText, text || undefined);
+  return new ApiError(res.status, res.statusText, text || undefined, resource);
 }
 
 /**
@@ -186,7 +193,7 @@ export async function apiGet<T>(
   }
 
   if (!res.ok) {
-    throw await toApiError(res);
+    throw await toApiError(res, `${path}${url.search}`);
   }
   return (await res.json()) as T;
 }
