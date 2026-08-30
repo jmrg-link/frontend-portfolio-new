@@ -37,6 +37,11 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# `public/` no tiene ficheros y git no versiona directorios vacíos: en un clon
+# limpio no llega al contexto y el COPY del runner se queda sin origen. Los
+# estáticos del sitio los sirve el CDN, así que el directorio va vacío pero
+# tiene que existir.
+RUN mkdir -p public
 ARG BACKEND_API_URL
 ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
 ARG SITE_URL=https://jmrg.dev
