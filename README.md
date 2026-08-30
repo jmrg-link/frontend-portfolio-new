@@ -57,7 +57,8 @@ ni caché, así que cualquier medida sale distorsionada.
 | `typecheck` | `tsc --noEmit` |
 | `lint` | ESLint |
 | `format` | Formatea con Biome |
-| `verify` | Biome, typecheck, lint, build y comprobación de secretos, en ese orden |
+| `test` | Suite de Playwright, una pasada y sin watch |
+| `verify` | Biome, typecheck, lint, build, comprobación de secretos y la suite, en ese orden |
 | `verify:no-secrets` | Busca tokens filtrados en el bundle del cliente |
 | `openapi` | Regenera los tipos de la API desde `openapi.json` |
 
@@ -105,5 +106,14 @@ dispara la compilación y esa espera hacía fallar pruebas de forma intermitente
 ## Despliegue
 
 El build genera salida `standalone`. El `Dockerfile` del repositorio construye la imagen a partir de
-ahí. Las variables que el contenedor necesita en tiempo de ejecución son la URL de la API, su token
-y `SITE_URL` para las URL canónicas.
+ahí.
+
+El contenedor exige `BACKEND_API_URL` y `BACKEND_API_TOKEN`: sin la primera falla al cargar el
+módulo del cliente, no en la primera petición. `SITE_URL` fija las URL canónicas y conviene darle el
+mismo valor que en el build, porque las páginas prerenderizadas ya lo llevan escrito. El formulario
+de contacto necesita además `TURNSTILE_SECRET_KEY`, `MAILTRAP_TOKEN` y `CONTACT_EMAIL_TO`; su
+ausencia rompe el envío, no el arranque.
+
+`NEXT_PUBLIC_TURNSTILE_SITE_KEY` es la excepción: al llevar el prefijo público queda incrustada en
+el bundle durante `next build`, así que se pasa como argumento de construcción y no como variable de
+ejecución. Sin ella el widget no se monta y el formulario queda inservible, con el build en verde.
