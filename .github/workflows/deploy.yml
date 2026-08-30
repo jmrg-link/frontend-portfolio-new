@@ -335,6 +335,29 @@ jobs:
             exit 1
           fi
 
+      # El bundle del navegador se sirve tal cual a cualquiera, así que se busca
+      # el valor literal de los dos secretos que pasan por el build. Buscar sus
+      # nombres o la palabra `Bearer` daría falsos positivos de las
+      # dependencias; el valor no aparece si Next hizo lo que debe, porque solo
+      # inlinea en cliente lo que lleva prefijo `NEXT_PUBLIC_`.
+      #
+      # `-l` imprime rutas y nunca la línea que casa: un fallo aquí no puede
+      # volcar el secreto al registro público de la ejecución.
+      - name: Comprobar que ningún secreto entró en el bundle
+        run: |
+          set -euo pipefail
+          hallazgos="$(docker run --rm --entrypoint sh \
+            -e T1="$BACKEND_API_TOKEN" -e T2="$CLERK_SECRET_KEY" \
+            "${{ steps.ecr.outputs.registry }}/${REPOSITORIO_FRONTEND}:${{ github.sha }}" \
+            -c 'grep -rlF -e "$T1" -e "$T2" /app/.next/static 2>/dev/null || true')"
+
+          if [ -n "$hallazgos" ]; then
+            echo "::error::Un secreto del build acabó en el bundle del navegador:" >&2
+            printf '%s\n' "$hallazgos" >&2
+            exit 1
+          fi
+          echo "Bundle limpio: ningún secreto del build aparece en .next/static"
+
       - name: Apagar los contenedores del job
         if: always()
         run: |
@@ -373,7 +396,8 @@ jobs:
           # la partiría en dos.
           parametros="$(jq -nc --arg c1 "docker compose -f $COMPOSE_REMOTO pull frontend" \
                                --arg c2 "docker compose -f $COMPOSE_REMOTO up -d frontend" \
-                               '{commands: [$c1, $c2]}')"
+                               --arg c3 "docker compose -f $COMPOSE_REMOTO ps frontend" \
+                               '{commands: [$c1, $c2, $c3]}')"
 
           id="$(aws ssm send-command \
             --instance-ids "$instancia" \
@@ -387,8 +411,13 @@ jobs:
           # la invocación quede registrada, que es lo normal justo tras enviarla.
           sleep 5
 
-          if ! aws ssm wait command-executed --command-id "$id" --instance-id "$instancia"; then
-            aws ssm get-command-invocation --command-id "$id" --instance-id "$instancia" \
-              --query '{estado:Status,salida:StandardOutputContent,error:StandardErrorContent}' >&2
-            exit 1
-          fi
+          # La salida se vuelca pase lo que pase: el `ps` final es la única
+          # constancia de en qué estado quedó el contenedor, y un despliegue que
+          # termina sin dejar rastro obliga a entrar en la máquina a mirarlo.
+          resultado=0
+          aws ssm wait command-executed --command-id "$id" --instance-id "$instancia" || resultado=1
+
+          aws ssm get-command-invocation --command-id "$id" --instance-id "$instancia" \
+            --query '{estado:Status,salida:StandardOutputContent,error:StandardErrorContent}'
+
+          exit "$resultado"
