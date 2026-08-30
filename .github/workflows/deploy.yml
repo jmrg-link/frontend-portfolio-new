@@ -1,0 +1,398 @@
+name: deploy
+
+# Construye la imagen del frontend y la despliega en la instancia.
+#
+# El `next build` prerenderiza leyendo la API REST y no tolera que falle, así
+# que el job levanta un backend efímero desde la imagen publicada en el registro
+# y construye contra él. Ese backend solo vive durante el job y lee la base real
+# en solo lectura; nada de lo que hace este workflow escribe en ella.
+#
+# La construcción va SIEMPRE por `docker build`, nunca por `pnpm build`: el
+# script `build` de package.json lleva incrustado `API_AUTH_DEV_TOKEN=true`, y
+# la guarda de src/lib/api/client.ts abre la puerta del token de desarrollo
+# cuando ese flag coincide con un backend en loopback — que es exactamente la
+# forma que tiene un backend efímero aquí. El Dockerfile invoca `next build`
+# directamente, así que el flag no entra en el entorno del build y el token
+# viaja por el secret mount de BuildKit.
+#
+# Las credenciales salen de un rol asumido por OIDC; el repositorio no guarda
+# ninguna. El rol solo se deja asumir desde la rama por defecto, de modo que un
+# pull request no puede desplegar.
+#
+# Ningún identificador de infraestructura aparece aquí en claro. Región, nombres
+# de repositorio del registro, identificadores de los almacenes de secretos,
+# nombre de la pila y rutas de la máquina destino entran como secretos del
+# repositorio, y el primer paso falla si alguno falta. Esto es deliberado: por
+# separado ninguno es una credencial, pero juntos describen dónde vive el
+# sistema y cómo se entra, y este repositorio es público.
+
+# El despliegue lo decide una persona y no un push: el mismo commit puede
+# subirse y desplegarse en momentos distintos.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  REPOSITORIO_FRONTEND: ${{ secrets.ECR_FRONTEND }}
+  REPOSITORIO_BACKEND: ${{ secrets.ECR_BACKEND }}
+  SECRETO_APLICACION: ${{ secrets.SECRET_ID_APP }}
+  PREFIJO_SECRETO_MONGO: ${{ secrets.SECRET_PREFIX_MONGO }}
+  PILA_INSTANCIA: ${{ secrets.STACK_NAME }}
+  COMPOSE_REMOTO: ${{ secrets.COMPOSE_PATH }}
+  BASE_MONGO: ${{ secrets.MONGO_DB }}
+  SITE_URL: ${{ secrets.SITE_URL }}
+  PUERTO_BACKEND: 8080
+  PUERTO_HUMO: 3000
+  # Con el API respondiendo el sitemap ronda la treintena de entradas; si las
+  # lecturas fallan degrada a las tres rutas estáticas. Diez separa los dos
+  # casos con holgura por ambos lados.
+  MINIMO_SITEMAP: 10
+
+jobs:
+  desplegar:
+    # Runner ARM: la instancia destino es arm64 y una imagen amd64 muere con
+    # `exec format error` en el primer arranque. Construir de forma nativa
+    # evita emular con QEMU, que multiplica el tiempo de un `next build`.
+    # No existe alias `-latest` para ARM; la versión se fija a mano.
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      # Un secreto que falta llega vacío, no ausente: sin esta puerta el fallo
+      # aparece cuatro pasos más tarde y disfrazado — una región vacía produce
+      # un error de firma, y un identificador de secreto vacío produce un
+      # ResourceNotFound que se lee como «el secreto no existe» cuando lo que
+      # no existe es la línea de configuración.
+      - name: Comprobar la configuración del repositorio
+        run: |
+          set -euo pipefail
+          faltan=""
+
+          # El primer argumento es el nombre del secreto tal y como hay que
+          # crearlo en el repositorio, no el de la variable a la que llega: son
+          # distintos a propósito y nombrar el interno mandaría a buscar un
+          # secreto que no existe.
+          comprobar() {
+            if [ -z "${2:-}" ]; then
+              faltan="$faltan $1"
+            fi
+          }
+
+          comprobar AWS_REGION           "${AWS_REGION:-}"
+          comprobar ECR_FRONTEND         "${REPOSITORIO_FRONTEND:-}"
+          comprobar ECR_BACKEND          "${REPOSITORIO_BACKEND:-}"
+          comprobar SECRET_ID_APP        "${SECRETO_APLICACION:-}"
+          comprobar SECRET_PREFIX_MONGO  "${PREFIJO_SECRETO_MONGO:-}"
+          comprobar STACK_NAME           "${PILA_INSTANCIA:-}"
+          comprobar COMPOSE_PATH         "${COMPOSE_REMOTO:-}"
+          comprobar MONGO_DB             "${BASE_MONGO:-}"
+          comprobar SITE_URL             "${SITE_URL:-}"
+          comprobar AWS_DEPLOY_ROLE_ARN  "${{ secrets.AWS_DEPLOY_ROLE_ARN }}"
+          comprobar MONGO_HOST           "${{ secrets.MONGO_HOST }}"
+
+          if [ -n "$faltan" ]; then
+            echo "::error::Faltan secretos del repositorio:$faltan" >&2
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - name: Credenciales por OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # El host del registro lleva el identificador de cuenta. La acción ya lo
+      # enmascara, y se vuelve a enmascarar aquí para no depender de que siga
+      # haciéndolo: aparece en cada `docker build` y en cada `push`.
+      - name: Sesión en el registro
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Enmascarar el host del registro
+        run: echo "::add-mask::${{ steps.ecr.outputs.registry }}"
+
+      # Cada valor se enmascara en cuanto se lee, antes de escribirlo en el
+      # entorno, para que un fallo posterior no lo vuelque al registro.
+      - name: Leer secretos de la aplicación
+        run: |
+          set -euo pipefail
+          json="$(aws secretsmanager get-secret-value \
+            --secret-id "$SECRETO_APLICACION" \
+            --query SecretString --output text)"
+
+          leer() { printf '%s' "$json" | jq -r --arg k "$1" '.[$k] // empty'; }
+
+          for campo in BACKEND_API_TOKEN CLERK_PUBLISHABLE_KEY \
+                       CLERK_SECRET_KEY CLERK_JWKS_URL; do
+            valor="$(leer "$campo")"
+            if [ -z "$valor" ]; then
+              echo "::error::Falta $campo en el secreto de la aplicación" >&2
+              exit 1
+            fi
+            echo "::add-mask::$valor"
+            echo "$campo=$valor" >> "$GITHUB_ENV"
+          done
+
+      # La URI no vive entera en ningún sitio a propósito: se compone aquí desde
+      # la credencial, igual que hace el arranque de la instancia. La contraseña
+      # se codifica para URL porque hoy no lleva puntuación pero puede llevarla
+      # tras una rotación, y ese fallo aparecería como una autenticación
+      # rechazada sin relación aparente con la rotación.
+      - name: Componer la URI de Mongo
+        run: |
+          set -euo pipefail
+          arn="$(aws secretsmanager list-secrets \
+            --filters Key=name,Values="$PREFIJO_SECRETO_MONGO" \
+            --query 'SecretList[0].ARN' --output text)"
+          if [ -z "$arn" ] || [ "$arn" = "None" ]; then
+            echo "::error::No hay ningún secreto que empiece por el prefijo configurado" >&2
+            exit 1
+          fi
+          echo "::add-mask::$arn"
+
+          cred="$(aws secretsmanager get-secret-value \
+            --secret-id "$arn" --query SecretString --output text)"
+
+          # La credencial solo trae `username` y `password`: la plantilla que la
+          # genera no incluye el host. Por eso el host viene de un secreto del
+          # repositorio y no se intenta leer de aquí.
+          usuario="$(printf '%s' "$cred" | jq -r '.username // empty')"
+          clave="$(printf '%s' "$cred" | jq -r '.password // empty')"
+          host="${{ secrets.MONGO_HOST }}"
+
+          if [ -z "$usuario" ] || [ -z "$clave" ]; then
+            echo "::error::La credencial de Mongo no trae usuario o clave" >&2
+            exit 1
+          fi
+          echo "::add-mask::$usuario"
+          echo "::add-mask::$clave"
+          echo "::add-mask::$host"
+
+          escapada="$(jq -rn --arg v "$clave" '$v|@uri')"
+          uri="mongodb://${usuario}:${escapada}@${host}:27017/${BASE_MONGO}?authSource=${BASE_MONGO}&tls=true&directConnection=true"
+          echo "::add-mask::$uri"
+          echo "MONGODB_URI=$uri" >> "$GITHUB_ENV"
+
+      # La clave pública de Turnstile puede no estar en el secreto de la
+      # aplicación. Se acepta desde ahí o desde un secreto del repositorio, y se
+      # exige: se incrusta en el bundle durante el build y sin ella el
+      # formulario de contacto queda inservible con el build en verde. Es el
+      # único valor del build que falla en silencio.
+      #
+      # No se enmascara: es pública por diseño y acaba en el HTML servido.
+      # Enmascararla solo taparía el diagnóstico si llegara la equivocada.
+      - name: Resolver la clave pública de Turnstile
+        run: |
+          set -euo pipefail
+          sitekey="$(aws secretsmanager get-secret-value \
+            --secret-id "$SECRETO_APLICACION" \
+            --query SecretString --output text \
+            | jq -r '.NEXT_PUBLIC_TURNSTILE_SITE_KEY // empty')"
+          [ -n "$sitekey" ] || sitekey="${{ secrets.TURNSTILE_SITE_KEY }}"
+
+          if [ -z "$sitekey" ]; then
+            echo "::error::NEXT_PUBLIC_TURNSTILE_SITE_KEY sin valor ni en el secreto de la aplicación ni en el secreto TURNSTILE_SITE_KEY del repositorio" >&2
+            exit 1
+          fi
+          echo "NEXT_PUBLIC_TURNSTILE_SITE_KEY=$sitekey" >> "$GITHUB_ENV"
+
+      # NODE_ENV=production no es cosmético: con cualquier otro valor Mongoose
+      # arranca con `autoIndex` y construiría índices en la base real al
+      # conectar. Las tres claves de Clerk tampoco son opcionales: sin ellas la
+      # validación de entorno del backend termina el proceso antes de escuchar.
+      - name: Levantar el backend efímero
+        run: |
+          set -euo pipefail
+          docker run -d --name backend-efimero \
+            -p 127.0.0.1:${PUERTO_BACKEND}:${PUERTO_BACKEND} \
+            -e NODE_ENV=production \
+            -e PORT="$PUERTO_BACKEND" \
+            -e MONGODB_URI="$MONGODB_URI" \
+            -e CLERK_PUBLISHABLE_KEY="$CLERK_PUBLISHABLE_KEY" \
+            -e CLERK_SECRET_KEY="$CLERK_SECRET_KEY" \
+            -e CLERK_JWKS_URL="$CLERK_JWKS_URL" \
+            "${{ steps.ecr.outputs.registry }}/${REPOSITORIO_BACKEND}:latest"
+
+      # `/api/health` es la única ruta exenta del guard; cualquier otra sin
+      # token devuelve 401. Sin esta espera el build arranca antes de que el
+      # backend acepte conexiones y muere recolectando las rutas de detalle.
+      - name: Esperar a que responda
+        run: |
+          set -euo pipefail
+          for intento in $(seq 1 60); do
+            if curl -fsS "http://127.0.0.1:${PUERTO_BACKEND}/api/health" >/dev/null 2>&1; then
+              echo "Backend listo en el intento $intento"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::El backend efímero no respondió en 120 s" >&2
+          docker logs backend-efimero >&2 || true
+          exit 1
+
+      # El driver del builder decide si `--network host` ve la VM o solo un
+      # contenedor, y el fallo se manifiesta como «no hay backend». Comprobarlo
+      # aquí convierte un diagnóstico caro en una línea del registro.
+      #
+      # Son dos peticiones porque `/api/health` es la única ruta exenta del
+      # guard: por sí sola diría que hay red y proceso vivo aun con un token
+      # equivocado, y el `next build` moriría después con 401 en cada lectura,
+      # con cara de backend roto en vez de credencial ajena. La segunda va por
+      # una ruta real y con el token entrando por el mismo secret mount que usa
+      # el build, así que la sonda cubre red, credencial y mecanismo.
+      #
+      # El contexto es un directorio vacío: la sonda no lee ni un fichero del
+      # repositorio, y mandarlo entero solo añadiría tiempo e interferencia.
+      - name: Comprobar el builder, la ruta al backend y la credencial
+        run: |
+          set -euo pipefail
+          docker buildx inspect | grep -E '^(Name|Driver):' || true
+          docker build --network host --no-cache \
+            --platform linux/arm64 \
+            --build-arg PUERTO="$PUERTO_BACKEND" \
+            --secret id=backend_api_token,env=BACKEND_API_TOKEN \
+            -f - "$(mktemp -d)" <<'DOCKERFILE'
+          # syntax=docker/dockerfile:1
+          FROM alpine:3
+          ARG PUERTO
+          RUN --mount=type=secret,id=backend_api_token \
+              apk add --no-cache curl >/dev/null && \
+              curl -fsS -o /dev/null "http://127.0.0.1:${PUERTO}/api/health" && \
+              curl -fsS -o /dev/null \
+                -H "Authorization: Bearer $(cat /run/secrets/backend_api_token)" \
+                "http://127.0.0.1:${PUERTO}/api/v1/blog"
+          DOCKERFILE
+
+      # `--network host` es la única forma de que el `RUN` del builder alcance
+      # el backend publicado en loopback: BuildKit solo admite `default`, `none`
+      # y `host`, no redes de Docker con nombre.
+      #
+      # Depende de construir con el builder por defecto, el BuildKit embebido en
+      # el demonio del runner. NO añadir `docker/setup-buildx-action`: ese crea
+      # un builder del driver `docker-container`, donde «host» pasa a ser la red
+      # de ese contenedor y deja de alcanzar el backend de la VM. Con ese driver
+      # harían falta además `--allow network.host` y el demonio arrancado
+      # permitiendo el entitlement, que viene deshabilitado por defecto.
+      #
+      # BACKEND_API_URL puede diferir aquí del valor de ejecución sin dejar nada
+      # horneado: se lee en un módulo `server-only` y no entra en el bundle.
+      # SITE_URL y la clave de Turnstile sí quedan escritas en el artefacto, así
+      # que van con su valor definitivo.
+      - name: Construir la imagen
+        run: |
+          set -euo pipefail
+          docker build \
+            --network host \
+            --platform linux/arm64 \
+            --build-arg BACKEND_API_URL="http://127.0.0.1:${PUERTO_BACKEND}/api/v1" \
+            --build-arg SITE_URL="$SITE_URL" \
+            --build-arg NEXT_PUBLIC_TURNSTILE_SITE_KEY="$NEXT_PUBLIC_TURNSTILE_SITE_KEY" \
+            --secret id=backend_api_token,env=BACKEND_API_TOKEN \
+            --tag "${{ steps.ecr.outputs.registry }}/${REPOSITORIO_FRONTEND}:${{ github.sha }}" \
+            --tag "${{ steps.ecr.outputs.registry }}/${REPOSITORIO_FRONTEND}:latest" \
+            .
+
+      # La imagen se arranca contra el backend efímero antes de publicarla. Es
+      # lo único que comprueba que arranca de verdad, y cierra el único camino
+      # conocido de «el API tuvo un hipo» a «artefacto malo publicado»: el
+      # sitemap degrada a sus tres rutas estáticas ante un fallo de lectura
+      # (src/app/sitemap.ts) y un fichero válido y vacío no rompe nada aguas
+      # arriba — el daño aparecería semanas después, en la indexación.
+      - name: Prueba de humo de la imagen
+        run: |
+          set -euo pipefail
+          docker run -d --name frontend-humo --network host \
+            -e PORT="$PUERTO_HUMO" \
+            -e BACKEND_API_URL="http://127.0.0.1:${PUERTO_BACKEND}/api/v1" \
+            -e BACKEND_API_TOKEN="$BACKEND_API_TOKEN" \
+            -e SITE_URL="$SITE_URL" \
+            "${{ steps.ecr.outputs.registry }}/${REPOSITORIO_FRONTEND}:${{ github.sha }}"
+
+          for intento in $(seq 1 30); do
+            if curl -fsS -o /dev/null -L "http://127.0.0.1:${PUERTO_HUMO}/"; then
+              break
+            fi
+            if [ "$intento" -eq 30 ]; then
+              echo "::error::La imagen no sirvió la portada en 60 s" >&2
+              docker logs frontend-humo >&2 || true
+              exit 1
+            fi
+            sleep 2
+          done
+
+          entradas="$(curl -fsS "http://127.0.0.1:${PUERTO_HUMO}/sitemap.xml" \
+            | grep -c '<url>' || true)"
+          echo "Entradas en el sitemap: $entradas"
+
+          if [ "$entradas" -lt "$MINIMO_SITEMAP" ]; then
+            echo "::error::El sitemap trae $entradas entradas y el mínimo es $MINIMO_SITEMAP: el build leyó un API degradado y la imagen no debe publicarse" >&2
+            docker logs frontend-humo >&2 || true
+            exit 1
+          fi
+
+      - name: Apagar los contenedores del job
+        if: always()
+        run: |
+          docker rm -f frontend-humo || true
+          docker rm -f backend-efimero || true
+
+      - name: Publicar la imagen
+        run: |
+          set -euo pipefail
+          docker push "${{ steps.ecr.outputs.registry }}/${REPOSITORIO_FRONTEND}:${{ github.sha }}"
+          docker push "${{ steps.ecr.outputs.registry }}/${REPOSITORIO_FRONTEND}:latest"
+
+      # La instancia se localiza por la pila que la creó y no por un
+      # identificador guardado: el identificador cambia si se recrea, y un valor
+      # caducado falla más tarde y peor que una consulta que no encuentra nada.
+      #
+      # El compose remoto apunta a `:latest`, así que lo que decide qué imagen
+      # se levanta es el digest al que apunte esa etiqueta durante el `pull`.
+      # El sha se publica igualmente para poder rastrear qué commit produjo cada
+      # imagen.
+      - name: Desplegar en la instancia
+        run: |
+          set -euo pipefail
+          instancia="$(aws ec2 describe-instances \
+            --filters "Name=tag:aws:cloudformation:stack-name,Values=$PILA_INSTANCIA" \
+                      "Name=instance-state-name,Values=running" \
+            --query 'Reservations[0].Instances[0].InstanceId' --output text)"
+          if [ -z "$instancia" ] || [ "$instancia" = "None" ]; then
+            echo "::error::No hay ninguna instancia en marcha de la pila configurada" >&2
+            exit 1
+          fi
+          echo "::add-mask::$instancia"
+
+          # Los comandos van como JSON y no con la forma abreviada `commands=a,b`:
+          # ahí la coma separa elementos, así que una coma dentro de una orden
+          # la partiría en dos.
+          parametros="$(jq -nc --arg c1 "docker compose -f $COMPOSE_REMOTO pull frontend" \
+                               --arg c2 "docker compose -f $COMPOSE_REMOTO up -d frontend" \
+                               '{commands: [$c1, $c2]}')"
+
+          id="$(aws ssm send-command \
+            --instance-ids "$instancia" \
+            --document-name AWS-RunShellScript \
+            --parameters "$parametros" \
+            --query 'Command.CommandId' --output text)"
+
+          echo "Orden $id enviada"
+
+          # `wait` falla con InvocationDoesNotExist si se pregunta antes de que
+          # la invocación quede registrada, que es lo normal justo tras enviarla.
+          sleep 5
+
+          if ! aws ssm wait command-executed --command-id "$id" --instance-id "$instancia"; then
+            aws ssm get-command-invocation --command-id "$id" --instance-id "$instancia" \
+              --query '{estado:Status,salida:StandardOutputContent,error:StandardErrorContent}' >&2
+            exit 1
+          fi

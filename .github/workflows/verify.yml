@@ -42,7 +42,8 @@ jobs:
   #
   # El prerender lee la API REST del backend en el arranque y las lecturas de la
   # home no toleran fallo, de modo que sin MongoDB y sin el backend levantados el
-  # build aborta. Cubrirlo exige orquestar el repo hermano dentro de este
-  # workflow, que es una decisión de infraestructura pendiente.
+  # build aborta. Quien sí levanta un backend es `deploy.yml`, que construye la
+  # imagen contra uno efímero; este workflow se queda con lo que no necesita red
+  # para que un push obtenga respuesta en segundos.
   #
-  # Mientras tanto, la puerta completa es local: `pnpm verify`.
+  # La puerta completa sigue siendo local: `pnpm verify`.
