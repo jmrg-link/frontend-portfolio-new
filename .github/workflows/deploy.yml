@@ -44,7 +44,7 @@ env:
   REPOSITORIO_FRONTEND: ${{ secrets.ECR_FRONTEND }}
   REPOSITORIO_BACKEND: ${{ secrets.ECR_BACKEND }}
   SECRETO_APLICACION: ${{ secrets.SECRET_ID_APP }}
-  PREFIJO_SECRETO_MONGO: ${{ secrets.SECRET_PREFIX_MONGO }}
+  SECRETO_MONGO: ${{ secrets.SECRET_ID_MONGO }}
   PILA_INSTANCIA: ${{ secrets.STACK_NAME }}
   COMPOSE_REMOTO: ${{ secrets.COMPOSE_PATH }}
   BASE_MONGO: ${{ secrets.MONGO_DB }}
@@ -89,7 +89,7 @@ jobs:
           comprobar ECR_FRONTEND         "${REPOSITORIO_FRONTEND:-}"
           comprobar ECR_BACKEND          "${REPOSITORIO_BACKEND:-}"
           comprobar SECRET_ID_APP        "${SECRETO_APLICACION:-}"
-          comprobar SECRET_PREFIX_MONGO  "${PREFIJO_SECRETO_MONGO:-}"
+          comprobar SECRET_ID_MONGO      "${SECRETO_MONGO:-}"
           comprobar STACK_NAME           "${PILA_INSTANCIA:-}"
           comprobar COMPOSE_PATH         "${COMPOSE_REMOTO:-}"
           comprobar MONGO_DB             "${BASE_MONGO:-}"
@@ -147,20 +147,16 @@ jobs:
       # se codifica para URL porque hoy no lleva puntuación pero puede llevarla
       # tras una rotación, y ese fallo aparecería como una autenticación
       # rechazada sin relación aparente con la rotación.
+      #
+      # El secreto se nombra entero en lugar de buscarlo por prefijo: el rol de
+      # despliegue concede la lectura de ese secreto pero no `ListSecrets`, de
+      # modo que resolverlo con una búsqueda falla por permisos antes de llegar
+      # a leer nada.
       - name: Componer la URI de Mongo
         run: |
           set -euo pipefail
-          arn="$(aws secretsmanager list-secrets \
-            --filters Key=name,Values="$PREFIJO_SECRETO_MONGO" \
-            --query 'SecretList[0].ARN' --output text)"
-          if [ -z "$arn" ] || [ "$arn" = "None" ]; then
-            echo "::error::No hay ningún secreto que empiece por el prefijo configurado" >&2
-            exit 1
-          fi
-          echo "::add-mask::$arn"
-
           cred="$(aws secretsmanager get-secret-value \
-            --secret-id "$arn" --query SecretString --output text)"
+            --secret-id "$SECRETO_MONGO" --query SecretString --output text)"
 
           # La credencial solo trae `username` y `password`: la plantilla que la
           # genera no incluye el host. Por eso el host viene de un secreto del
