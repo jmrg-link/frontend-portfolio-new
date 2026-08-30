@@ -297,6 +297,14 @@ jobs:
             --tag "${{ steps.ecr.outputs.registry }}/${REPOSITORIO_FRONTEND}:latest" \
             .
 
+      # El prerender solo ve el problem-details que el backend devuelve de
+      # puertas afuera —«An unexpected error occurred»—, que es lo correcto para
+      # un cliente y lo inservible para diagnosticar. La traza vive en el
+      # contenedor, y sin volcarla aquí muere con el job.
+      - name: Registro del backend efímero
+        if: failure()
+        run: docker logs backend-efimero 2>&1 | tail -100
+
       # La imagen se arranca contra el backend efímero antes de publicarla. Es
       # lo único que comprueba que arranca de verdad, y cierra el único camino
       # conocido de «el API tuvo un hipo» a «artefacto malo publicado»: el
