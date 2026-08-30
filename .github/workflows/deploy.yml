@@ -246,6 +246,14 @@ jobs:
       # una ruta real y con el token entrando por el mismo secret mount que usa
       # el build, así que la sonda cubre red, credencial y mecanismo.
       #
+      # Esa segunda pide el listado completo de proyectos, que es la consulta
+      # más lenta del prerender, y reintenta: responder al health dice que el
+      # proceso escucha, no que su conexión a la base esté lista, y el prerender
+      # dispara las lecturas de los dos idiomas nada más arrancar. Una consulta
+      # entrando antes de tiempo devuelve 500 y tumba el build entero, así que
+      # el builder espera aquí a que esa ruta conteste en vez de descubrirlo a
+      # mitad de la construcción.
+      #
       # El contexto es un directorio vacío: la sonda no lee ni un fichero del
       # repositorio, y mandarlo entero solo añadiría tiempo e interferencia.
       - name: Comprobar el builder, la ruta al backend y la credencial
@@ -261,11 +269,22 @@ jobs:
           FROM alpine:3
           ARG PUERTO
           RUN --mount=type=secret,id=backend_api_token \
-              apk add --no-cache curl >/dev/null && \
-              curl -fsS -o /dev/null "http://127.0.0.1:${PUERTO}/api/health" && \
-              curl -fsS -o /dev/null \
-                -H "Authorization: Bearer $(cat /run/secrets/backend_api_token)" \
-                "http://127.0.0.1:${PUERTO}/api/v1/blog"
+              apk add --no-cache curl >/dev/null; \
+              if ! curl -fsS -o /dev/null "http://127.0.0.1:${PUERTO}/api/health"; then \
+                echo "El builder no alcanza el health del backend" >&2; \
+                exit 1; \
+              fi; \
+              for intento in $(seq 1 10); do \
+                if curl -fsS -o /dev/null \
+                     -H "Authorization: Bearer $(cat /run/secrets/backend_api_token)" \
+                     "http://127.0.0.1:${PUERTO}/api/v1/projects?locale=es"; then \
+                  echo "Listado de proyectos disponible en el intento $intento"; \
+                  exit 0; \
+                fi; \
+                sleep 3; \
+              done; \
+              echo "El listado de proyectos no respondió en 30 s" >&2; \
+              exit 1
           DOCKERFILE
 
       # `--network host` es la única forma de que el `RUN` del builder alcance
