@@ -1,16 +1,20 @@
+# Dependencias y artefactos de construcción
 node_modules
 .next
 *.log
-.DS_Store
+test-results
+shots
 
+# Ocultos, en la raíz y anidados. La clase negada de Go se escribe [^x]:
+# un patrón .[!.]* casa la clase literal { ! , . } y no excluye nada.
+.*
+**/.*
+
+# Entorno y control de versiones
 .env*
 .git
 
+# Documentación y ficheros de construcción
+*.md
 docs
-shots
-test-results
-
-.[!.]*
-
 Dockerfile
-.dockerignore
